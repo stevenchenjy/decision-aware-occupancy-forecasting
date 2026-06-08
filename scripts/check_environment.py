@@ -22,8 +22,6 @@ PACKAGES = [
     ("torch", "torch"),
     ("matplotlib", "matplotlib"),
     ("seaborn", "seaborn"),
-    ("nbformat", "nbformat"),
-    ("nbclient", "nbclient"),
 ]
 
 LOCAL_MODULES = [
@@ -31,6 +29,8 @@ LOCAL_MODULES = [
     "src.energy_opportunity",
     "src.evaluation",
     "src.feature_engineering",
+    "src.figure_generation",
+    "src.lbnl_pipeline",
     "src.models",
     "src.plotting",
     "src.recommendation_policy",

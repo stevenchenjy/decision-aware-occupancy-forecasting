@@ -1,6 +1,6 @@
 # Reproducing The Experiment
 
-This document describes the current reproducibility path without changing the scientific logic in `LBNL_occupancy_forecasting_main.ipynb`.
+This document describes the current reproducibility path. The executable research logic lives in `src/`, while `LBNL_occupancy_forecasting_main.ipynb` is kept as a reporting notebook for saved outputs.
 
 ## 1. Environment
 
@@ -46,19 +46,15 @@ python scripts/check_environment.py
 
 This imports the main third-party packages and all local `src` modules.
 
-## 4. Execute The Notebook
+## 4. Execute The Full Pipeline
 
 ```bash
 python scripts/run_all.py
 ```
 
-The script uses `nbclient` to execute `LBNL_occupancy_forecasting_main.ipynb` in place and writes an executed copy to:
+The script runs `src.lbnl_pipeline.run_pipeline`, which reproduces data preparation, model training, threshold selection, energy accounting, prediction exports, result tables, and figures.
 
-```text
-results/executed_notebook.ipynb
-```
-
-The notebook generates result tables and figures under:
+Outputs are written under:
 
 ```text
 results/
@@ -66,7 +62,25 @@ figures/
 predictions/
 ```
 
-## 5. Unit Tests
+## 5. Regenerate Figures Only
+
+After `results/` exists, regenerate plots without retraining models:
+
+```bash
+python scripts/generate_figures.py
+```
+
+This reads saved CSV files from `results/` and writes PNG files to `figures/`.
+
+## 6. Reporting Notebook
+
+Open the reporting notebook after running the scripts:
+
+```text
+LBNL_occupancy_forecasting_main.ipynb
+```
+
+## 7. Unit Tests
 
 The unit tests use small synthetic data and do not require the LBNL dataset.
 
@@ -74,7 +88,6 @@ The unit tests use small synthetic data and do not require the LBNL dataset.
 pytest -q
 ```
 
-## 6. Notes On Exact Reproduction
+## 8. Notes On Exact Reproduction
 
-The current notebook trains stochastic models with fixed seeds and averages several seeded predictions. Exact bitwise reproducibility may vary across CPU/GPU backends and library versions, especially for PyTorch. The reported scientific logic should remain stable if the same data, splits, and dependency versions are used.
-
+The Python pipeline trains stochastic models with fixed seeds and averages several seeded predictions. Exact bitwise reproducibility may vary across CPU/GPU backends and library versions, especially for PyTorch. The reported scientific logic should remain stable if the same data, splits, and dependency versions are used.

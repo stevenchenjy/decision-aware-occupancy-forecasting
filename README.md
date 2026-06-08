@@ -42,6 +42,14 @@ Under the 10% validation-selected occupancy-conflict policy, LightGBM selected a
 
 Historical Average has the highest model-level Empty AUPRC, which shows that periodic occupancy structure is strong. LightGBM gives a stronger practical risk-opportunity tradeoff under the 10% recommendation policy in the current experiment.
 
+## Repository Layout
+
+- `src/` contains reusable data preparation, modeling, evaluation, policy, energy-accounting, plotting, and pipeline code.
+- `scripts/run_all.py` runs the full Python pipeline and writes outputs.
+- `scripts/generate_figures.py` redraws figures from saved result CSVs without retraining models.
+- `LBNL_occupancy_forecasting_main.ipynb` is a reporting notebook for inspecting saved tables and figures.
+- `results/`, `figures/`, and `predictions/` are output folders.
+
 ## Reproduce The Results
 
 1. Read [DATA.md](DATA.md) and download the LBNL Building 59 dataset from Dryad.
@@ -62,13 +70,21 @@ Historical Average has the highest model-level Empty AUPRC, which shows that per
    python scripts/check_environment.py
    ```
 
-6. Execute the current end-to-end notebook:
+6. Execute the full Python pipeline:
 
    ```bash
    python scripts/run_all.py
    ```
 
-The notebook writes outputs to `results/`, `figures/`, and `predictions/`.
+The pipeline writes outputs to `results/`, `figures/`, and `predictions/`.
+
+To regenerate figures from existing result tables without retraining:
+
+```bash
+python scripts/generate_figures.py
+```
+
+Open `LBNL_occupancy_forecasting_main.ipynb` after running the scripts to review the report.
 
 ## Current Limitations
 
@@ -81,4 +97,3 @@ The notebook writes outputs to `results/`, `figures/`, and `predictions/`.
 - Transformer and DLinear baselines are exploratory and lightly tuned.
 
 See [LIMITATIONS.md](LIMITATIONS.md) and [ROADMAP.md](ROADMAP.md) for reviewer-facing caveats and planned improvements.
-

@@ -49,6 +49,19 @@ def test_select_threshold_falls_back_to_lowest_conflict():
     assert selected["empty_probability_threshold"] == 0.90
 
 
+def test_select_threshold_breaks_safe_energy_ties_with_empty_recall():
+    validation_sweep = pd.DataFrame(
+        [
+            {"empty_probability_threshold": 0.60, "occupancy_conflict_rate": 0.08, "safe_shiftable_load_kwh": 20.0, "empty_recall": 0.20},
+            {"empty_probability_threshold": 0.70, "occupancy_conflict_rate": 0.09, "safe_shiftable_load_kwh": 20.0, "empty_recall": 0.50},
+        ]
+    )
+
+    selected = select_threshold(validation_sweep, risk_delta=0.10)
+
+    assert selected["empty_probability_threshold"] == 0.70
+
+
 def test_stable_empty_window_extraction_on_toy_probability_series():
     probs = [[0.90, 0.85, 0.20, 0.95, 0.96, 0.97, 0.10]]
 
@@ -56,4 +69,3 @@ def test_stable_empty_window_extraction_on_toy_probability_series():
 
     assert mask.tolist() == [[True, True, False, True, True, True, False]]
     assert extract_windows(mask[0], min_steps=2) == [(0, 2), (3, 6)]
-

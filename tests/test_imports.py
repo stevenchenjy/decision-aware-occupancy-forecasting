@@ -7,10 +7,11 @@ def test_src_modules_import():
         "src.energy_opportunity",
         "src.evaluation",
         "src.feature_engineering",
+        "src.figure_generation",
+        "src.lbnl_pipeline",
         "src.models",
         "src.plotting",
         "src.recommendation_policy",
     ]
     for module in modules:
         importlib.import_module(module)
-

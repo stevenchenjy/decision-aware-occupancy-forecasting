@@ -24,7 +24,7 @@ This path is intentionally ignored by `.gitignore`.
 
 ## Required Files
 
-The current notebook expects these files:
+The Python pipeline expects these files:
 
 ```text
 occ.csv
@@ -64,4 +64,3 @@ python scripts/download_data.py
 ```
 
 The helper currently prints manual download and placement instructions. It does not automate Dryad download or verify checksums yet.
-

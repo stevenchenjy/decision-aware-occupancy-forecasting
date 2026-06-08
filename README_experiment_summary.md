@@ -82,8 +82,8 @@ Historical Average has strong model-level Empty AUPRC, but it is conservative at
 
 ## 11. Files Included
 
-- `LBNL_occupancy_forecasting_main.ipynb`: runnable end-to-end notebook.
-- `src/`: reusable pipeline modules.
+- `LBNL_occupancy_forecasting_main.ipynb`: reporting notebook for saved outputs.
+- `src/`: reusable pipeline modules and Python-first experiment runner.
 - `results/`: CSV outputs for data splits, metrics, policies, ablations, robustness, and energy opportunity.
 - `figures/`: PNG figures for model metrics, threshold tradeoffs, stable windows, examples, and feature importance.
 - `predictions/`: per-model test prediction files.
@@ -95,5 +95,6 @@ Historical Average has strong model-level Empty AUPRC, but it is conservative at
 1. Follow `DATA.md` and place the extracted LBNL Building 59 files at the expected local path.
 2. Install dependencies with `pip install -r requirements.txt`, or create the Conda environment from `environment.yml`.
 3. Run `python scripts/check_environment.py`.
-4. Run `python scripts/run_all.py` to execute `LBNL_occupancy_forecasting_main.ipynb` with `nbclient`.
-5. The notebook writes outputs to `results/`, `figures/`, and `predictions/`.
+4. Run `python scripts/run_all.py` to execute the full Python pipeline.
+5. Run `python scripts/generate_figures.py` to redraw figures from saved result tables without retraining.
+6. Open `LBNL_occupancy_forecasting_main.ipynb` to review the report.
