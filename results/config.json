@@ -1,0 +1,50 @@
+{
+  "data_dir": "doi_10_7941_D1N33Q__v20220202/Building_59/Bldg59_clean data",
+  "figure_dir": "figures",
+  "result_dir": "results",
+  "raw_timestamp_timezone": "UTC",
+  "local_timezone": "America/Los_Angeles",
+  "freq": "15min",
+  "history_steps": 96,
+  "horizon_steps": 96,
+  "forecast_stride": 1,
+  "train_fraction": 0.7,
+  "val_fraction": 0.15,
+  "split_gap_steps": 96,
+  "occupied_count_threshold": 0.0,
+  "default_empty_threshold": 0.65,
+  "stable_empty_min_steps": 4,
+  "threshold_min": 0.05,
+  "threshold_max": 0.95,
+  "threshold_step": 0.025,
+  "risk_deltas": [
+    0.05,
+    0.1,
+    0.2
+  ],
+  "main_models": [
+    "Historical average",
+    "LightGBM",
+    "Random forest",
+    "DLinear",
+    "Transformer"
+  ],
+  "random_seeds": [
+    42,
+    43,
+    44
+  ],
+  "tabular_max_train_rows": 200000,
+  "rf_estimators": 70,
+  "lgbm_estimators": 320,
+  "permutation_sample_rows": 30000,
+  "bootstrap_reps": 200,
+  "deep_epochs": 12,
+  "early_stop_patience": 4,
+  "batch_size": 256,
+  "d_model": 32,
+  "n_heads": 4,
+  "n_layers": 1,
+  "dropout": 0.1,
+  "learning_rate": 0.001
+}

@@ -1,0 +1,11 @@
+pandas==2.3.3
+numpy==1.26.4
+scikit-learn==1.8.0
+lightgbm==4.6.0
+torch==2.11.0+cpu
+matplotlib==3.10.8
+seaborn==0.13.2
+nbformat==5.10.4
+nbclient==0.10.4
+ipykernel
+openpyxl

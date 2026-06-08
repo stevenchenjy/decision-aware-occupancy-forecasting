@@ -1,0 +1,5 @@
+﻿load_variable,available_in_dataset,unit_assumption,used_as_model_input,role
+hvac_S,True,kW before multiplying by 0.25 h,False,default_controllable_load
+lig_S,True,kW before multiplying by 0.25 h,False,default_controllable_load
+mels_S,True,kW before multiplying by 0.25 h,False,opportunity_sensitivity_only
+ele_south_total,True,kW before multiplying by 0.25 h,False,opportunity_sensitivity_only

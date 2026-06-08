@@ -1,0 +1,7 @@
+﻿assumption,description,hvac_S,lig_S,mels_S,ele_south_total
+hvac_lighting_full_metered,HVAC south + lighting south at 100% metered kW,1.0,1.0,0.0,0.0
+hvac_lighting_conservative,30% HVAC south + 80% lighting south controllable,0.3,0.8,0.0,0.0
+lighting_only_full,Lighting south at 100% metered kW,0.0,1.0,0.0,0.0
+hvac_only_conservative,30% HVAC south controllable,0.3,0.0,0.0,0.0
+hvac_lighting_plug_conservative,30% HVAC + 80% lighting + 10% plug/MELs south controllable,0.3,0.8,0.1,0.0
+total_south_30pct,30% of total south electricity; component meters not added to avoid double counting,0.0,0.0,0.0,0.3

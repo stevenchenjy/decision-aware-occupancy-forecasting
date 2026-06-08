@@ -1,0 +1,39 @@
+﻿model,metric,mean,ci_lower,ci_upper,split_or_bootstrap_method
+Historical average,auprc_empty,0.847153895638327,0.7916275826125214,0.8916729494004272,"daily block bootstrap, delta=10% policy"
+Historical average,f1_empty,0.7610134009863088,0.6856232857977879,0.8214366968926904,"daily block bootstrap, delta=10% policy"
+Historical average,occupancy_conflict_rate,0.0,0.0,0.0,"daily block bootstrap, delta=10% policy"
+Historical average,safe_shiftable_load_opportunity_kwh,98.7109271144867,28.706030702590944,183.1670070648194,"daily block bootstrap, delta=10% policy"
+LightGBM,auprc_empty,0.8383819552713496,0.7699817834921174,0.8958314687146676,"daily block bootstrap, delta=10% policy"
+LightGBM,f1_empty,0.7538092562252825,0.6913137352599236,0.8095476309977917,"daily block bootstrap, delta=10% policy"
+LightGBM,occupancy_conflict_rate,0.0442598861997457,0.0,0.118244514106583,"daily block bootstrap, delta=10% policy"
+LightGBM,safe_shiftable_load_opportunity_kwh,527.2230273056031,95.82945079803469,1195.6227966308593,"daily block bootstrap, delta=10% policy"
+Random forest,auprc_empty,0.8221493983994277,0.7447915920824506,0.8825126592283039,"daily block bootstrap, delta=10% policy"
+Random forest,f1_empty,0.7684637387169576,0.7106794655171603,0.829042650770782,"daily block bootstrap, delta=10% policy"
+Random forest,occupancy_conflict_rate,0.0526250749202117,0.0,0.1440849673202615,"daily block bootstrap, delta=10% policy"
+Random forest,safe_shiftable_load_opportunity_kwh,364.8586831569672,41.26110820770264,930.2356185913088,"daily block bootstrap, delta=10% policy"
+DLinear,auprc_empty,0.5271324323939097,0.417725642337229,0.6843567017318647,"daily block bootstrap, delta=10% policy"
+DLinear,f1_empty,0.5843617266390095,0.4999320652173913,0.6581687206344032,"daily block bootstrap, delta=10% policy"
+DLinear,occupancy_conflict_rate,0.4085343916505702,0.0,0.6215207314402511,"daily block bootstrap, delta=10% policy"
+DLinear,safe_shiftable_load_opportunity_kwh,180.36615785598755,26.00921621322632,345.8841552734378,"daily block bootstrap, delta=10% policy"
+Transformer,auprc_empty,0.7527014099091067,0.6714105604603428,0.8210019014871698,"daily block bootstrap, delta=10% policy"
+Transformer,f1_empty,0.6424418439767937,0.5644327554206724,0.7025380550427688,"daily block bootstrap, delta=10% policy"
+Transformer,occupancy_conflict_rate,0.0758056139318136,0.0,0.1578947368421052,"daily block bootstrap, delta=10% policy"
+Transformer,safe_shiftable_load_opportunity_kwh,93.41642177581788,0.0,245.52698974609388,"daily block bootstrap, delta=10% policy"
+DLinear,auprc_empty,0.5918373684234747,0.5882970123627352,0.5961402124718366,multiple random seeds
+DLinear,f1_empty,0.6166006843056494,0.6156011084714399,0.6177283392702646,multiple random seeds
+LightGBM,auprc_empty,0.8354422941750822,0.8343004051392057,0.836647049539452,multiple random seeds
+LightGBM,f1_empty,0.757947889049101,0.7498468593867202,0.7627255806355928,multiple random seeds
+Random forest,auprc_empty,0.8303706093512422,0.8286517677802664,0.8320207149754493,multiple random seeds
+Random forest,f1_empty,0.7741498420250145,0.7699149935519618,0.7767357660618939,multiple random seeds
+Transformer,auprc_empty,0.7481155903517074,0.7435859602342475,0.7519615888121338,multiple random seeds
+Transformer,f1_empty,0.6491527161438291,0.586854259846034,0.7035118625884278,multiple random seeds
+Historical average,auprc_empty,0.7599304938506831,0.6849544415250644,0.8183995798146533,rolling-origin temporal validation
+Historical average,f1_empty,0.6842283419132787,0.6024683761492858,0.794003823809216,rolling-origin temporal validation
+LightGBM,auprc_empty,0.7951483264783744,0.7367068488082604,0.8289075745960943,rolling-origin temporal validation
+LightGBM,f1_empty,0.7196429058066678,0.6688220768310379,0.7946143099584634,rolling-origin temporal validation
+Random forest,auprc_empty,0.7673732116802219,0.7264614904462676,0.8034466550307142,rolling-origin temporal validation
+Random forest,f1_empty,0.7067298054446263,0.6650817824994119,0.7700685951746188,rolling-origin temporal validation
+Historical average leave-one-zone-out,auprc_empty,0.8376618512466644,0.8118261817604482,0.8634975207328806,leave-one-zone-out spatial validation
+Historical average leave-one-zone-out,f1_empty,0.7644371256150968,0.7403348554033485,0.7885393958268452,leave-one-zone-out spatial validation
+LightGBM time-only leave-one-zone-out,auprc_empty,0.839191037777471,0.8125430912528551,0.865838984302087,leave-one-zone-out spatial validation
+LightGBM time-only leave-one-zone-out,f1_empty,0.7574529616595542,0.7296879827000309,0.7852179406190777,leave-one-zone-out spatial validation

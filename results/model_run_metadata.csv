@@ -1,0 +1,6 @@
+﻿model_name,hyperparameters,random_seed,training_time,selected_threshold_delta_10,prediction_file_path
+Historical average,train-only slot averages,deterministic,see results/training_history.csv and notebook cell output,0.95,predictions/historical_average_test_predictions.csv
+LightGBM,200000 sampled rows per seed; fixed hyperparameters,"42, 43, 44",see results/training_history.csv and notebook cell output,0.95,predictions/lightgbm_test_predictions.csv
+Random forest,200000 sampled rows per seed; fixed hyperparameters,"42, 43, 44",see results/training_history.csv and notebook cell output,0.925,predictions/random_forest_test_predictions.csv
+Transformer,max 12 epochs per seed,"42, 43, 44",see results/training_history.csv and notebook cell output,0.9,predictions/transformer_test_predictions.csv
+DLinear,max 12 epochs per seed,"42, 43, 44",see results/training_history.csv and notebook cell output,0.875,predictions/dlinear_test_predictions.csv

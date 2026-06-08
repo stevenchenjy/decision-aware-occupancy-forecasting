@@ -1,0 +1,4 @@
+﻿item,definition
+binary_label,"occupied=1, empty=0 for occupancy prediction; evaluation flips the positive class so Empty=1 for recommendations."
+threshold_logic,occupied is derived from occ_count_max > 0.0; any detected occupant in either south-zone sensor marks the 15-minute interval occupied.
+count_columns,"occ_third_south, occ_fourth_south"

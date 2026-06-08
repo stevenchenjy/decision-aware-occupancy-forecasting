@@ -1,0 +1,17 @@
+﻿section,metric,value
+LightGBM 10% policy,selected_threshold,0.95
+LightGBM 10% policy,test_occupancy_conflict_rate,0.0415094339622641
+LightGBM 10% policy,safe_shiftable_load_kwh,493.9231551775
+LightGBM 10% policy,kwh_per_day,11.486585004127909
+LightGBM 10% policy,number_of_recommended_windows,19
+LightGBM 10% policy,number_of_safe_windows,16
+LightGBM 10% policy,average_window_duration,3.486842105263158
+Stable window 1.0h,safe_shiftable_load_kwh,493.9231551775
+Stable window 1.0h,test_occupancy_conflict_rate,0.0415094339622641
+Stable window 2.0h,safe_shiftable_load_kwh,482.74958427075
+Stable window 2.0h,test_occupancy_conflict_rate,0.0368852459016393
+Stable window 4.0h,safe_shiftable_load_kwh,313.23122770025
+Stable window 4.0h,test_occupancy_conflict_rate,0.0148148148148148
+Block bootstrap CI,auprc_empty,"mean=0.8384, 95% CI=[0.7700, 0.8958]"
+Block bootstrap CI,occupancy_conflict_rate,"mean=0.0443, 95% CI=[0.0000, 0.1182]"
+Block bootstrap CI,safe_shiftable_load_opportunity_kwh,"mean=527.2230, 95% CI=[95.8295, 1195.6228]"

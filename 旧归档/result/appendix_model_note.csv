@@ -1,0 +1,3 @@
+﻿model,main_experiment_status,reason
+TFT,moved_to_appendix_not_run,Excluded from main comparison to keep feature inputs and tuning budget fair.
+PatchTST,moved_to_appendix_not_run,Excluded from main comparison to keep feature inputs and tuning budget fair.

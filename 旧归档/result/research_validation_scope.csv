@@ -1,0 +1,4 @@
+﻿validation,status,scope
+rolling_origin_cv,implemented_lightweight,"Historical Average, LightGBM, Random Forest; deep models use final split multi-seed training due runtime."
+leave_one_zone_out,implemented_lightweight,Zone-level occupancy labels with time-only features to avoid cross-zone occupancy leakage.
+block_bootstrap_ci,implemented,95% CIs over non-overlapping daily forecast blocks for main models.

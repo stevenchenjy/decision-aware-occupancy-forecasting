@@ -1,0 +1,5 @@
+﻿daily_local_index,test_anchor_index,anchor_time,safe_count,conflict_count,missed_count,recommendation_count,actual_empty_count,transitions,case_type
+4,385,2019-01-13 00:00:00-08:00,6,0,79,6,85,5,successful_recommendation_day
+4,385,2019-01-13 00:00:00-08:00,6,0,79,6,85,5,false_positive_recommendation_day
+32,3073,2019-02-10 00:00:00-08:00,6,0,80,6,86,7,missed_opportunity_day
+24,2305,2019-02-02 00:00:00-08:00,5,0,71,5,76,12,irregular_schedule_day

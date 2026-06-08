@@ -1,0 +1,35 @@
+﻿feature,canonical_name,feature_group,used_for_prediction,availability_rule
+anchor_last_occupied,anchor_last_occupied,historical_occupancy,True,Past occupancy/count feature only; rolling features use arr[anchor-window:anchor].
+anchor_last_count,anchor_last_count,historical_occupancy,True,Past occupancy/count feature only; rolling features use arr[anchor-window:anchor].
+lag_occ_15min,lag_occ_15min,historical_occupancy,True,Past occupancy/count feature only; rolling features use arr[anchor-window:anchor].
+lag_occ_30min,lag_occ_30min,historical_occupancy,True,Past occupancy/count feature only; rolling features use arr[anchor-window:anchor].
+lag_occ_1h,lag_occ_1h,historical_occupancy,True,Past occupancy/count feature only; rolling features use arr[anchor-window:anchor].
+lag_occ_24h,lag_occ_24h,historical_occupancy,True,Past occupancy/count feature only; rolling features use arr[anchor-window:anchor].
+same_time_last_week_occ,same_time_last_week_occ,historical_occupancy,True,Past occupancy/count feature only; rolling features use arr[anchor-window:anchor].
+hist_occ_mean_1h,hist_occ_mean_1h,historical_occupancy,True,Past occupancy/count feature only; rolling features use arr[anchor-window:anchor].
+hist_occ_mean_6h,hist_occ_mean_6h,historical_occupancy,True,Past occupancy/count feature only; rolling features use arr[anchor-window:anchor].
+hist_occ_mean_24h,hist_occ_mean_24h,historical_occupancy,True,Past occupancy/count feature only; rolling features use arr[anchor-window:anchor].
+hist_count_mean_24h,hist_count_mean_24h,historical_occupancy,True,Past occupancy/count feature only; rolling features use arr[anchor-window:anchor].
+anchor_wifi_south_total,anchor_wifi_south_total,causal_issue_time_sensor,True,Observed at or before forecast anchor and repeated across horizon; no future sensor values.
+anchor_wifi_south_mean,anchor_wifi_south_mean,causal_issue_time_sensor,True,Observed at or before forecast anchor and repeated across horizon; no future sensor values.
+anchor_temp_interior_mean,anchor_temp_interior_mean,causal_issue_time_sensor,True,Observed at or before forecast anchor and repeated across horizon; no future sensor values.
+anchor_air_temp_set_1,anchor_air_temp_set_1,causal_issue_time_sensor,True,Observed at or before forecast anchor and repeated across horizon; no future sensor values.
+anchor_air_temp_set_2,anchor_air_temp_set_2,causal_issue_time_sensor,True,Observed at or before forecast anchor and repeated across horizon; no future sensor values.
+anchor_dew_point_temperature_set_1d,anchor_dew_point_temperature_set_1d,causal_issue_time_sensor,True,Observed at or before forecast anchor and repeated across horizon; no future sensor values.
+anchor_relative_humidity_set_1,anchor_relative_humidity_set_1,causal_issue_time_sensor,True,Observed at or before forecast anchor and repeated across horizon; no future sensor values.
+anchor_solar_radiation_set_1,anchor_solar_radiation_set_1,causal_issue_time_sensor,True,Observed at or before forecast anchor and repeated across horizon; no future sensor values.
+same_time_yesterday,same_time_yesterday,historical_occupancy,True,Past occupancy/count feature only; rolling features use arr[anchor-window:anchor].
+horizon_fraction,horizon_fraction,known_future_time,True,Known at forecast issue time; generated after UTC to Pacific conversion.
+hour_sin,hour_sin,known_future_time,True,Known at forecast issue time; generated after UTC to Pacific conversion.
+hour_cos,hour_cos,known_future_time,True,Known at forecast issue time; generated after UTC to Pacific conversion.
+dow_sin,day_of_week_sin,known_future_time,True,Known at forecast issue time; generated after UTC to Pacific conversion.
+dow_cos,day_of_week_cos,known_future_time,True,Known at forecast issue time; generated after UTC to Pacific conversion.
+month_sin,month_sin,known_future_time,True,Known at forecast issue time; generated after UTC to Pacific conversion.
+month_cos,month_cos,known_future_time,True,Known at forecast issue time; generated after UTC to Pacific conversion.
+is_weekend,is_weekend,known_future_time,True,Known at forecast issue time; generated after UTC to Pacific conversion.
+is_business_hour,is_business_hour,known_future_time,True,Known at forecast issue time; generated after UTC to Pacific conversion.
+is_holiday,is_holiday,known_future_time,True,Known at forecast issue time; generated after UTC to Pacific conversion.
+hvac_S,hvac_S,excluded_load_or_operational_variable,False,Excluded from model inputs; used only for safe shiftable-load opportunity estimation or sensitivity.
+lig_S,lig_S,excluded_load_or_operational_variable,False,Excluded from model inputs; used only for safe shiftable-load opportunity estimation or sensitivity.
+mels_S,mels_S,excluded_load_or_operational_variable,False,Excluded from model inputs; used only for safe shiftable-load opportunity estimation or sensitivity.
+ele_south_total,ele_south_total,excluded_load_or_operational_variable,False,Excluded from model inputs; used only for safe shiftable-load opportunity estimation or sensitivity.
