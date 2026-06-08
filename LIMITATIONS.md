@@ -13,3 +13,4 @@ This repository is a research prototype. The current results should be interpret
 - Missingness assumptions: causal forward-fill avoids leakage but can propagate stale sensor values, especially for sparse WiFi coverage.
 - No production monitoring: there is no deployed inference service, drift monitoring, model registry, or fallback controller.
 
+For wording guidance on what the current repository does and does not support, see `CLAIMS_AND_LIMITATIONS.md`.

@@ -38,3 +38,5 @@
 - Occupancy conflict rate is not a full thermal comfort metric. PMV/PPD, setpoint response, occupant feedback, and comfort constraints are not modeled.
 - Results are limited to LBNL Building 59 selected south zones. Cross-zone validation is included, but cross-building generalization is not claimed.
 - Threshold policies are offline recommendations. A full RL scheduler is not implemented because no simulator or counterfactual energy response model is available.
+
+See `CLAIMS_AND_LIMITATIONS.md` for supported claims, unsupported claims, and future-work boundaries.

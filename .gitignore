@@ -44,6 +44,3 @@ scratch/
 # Old development notebooks
 LBNL_occupancy_transformer_forecasting.ipynb
 LBNL_occupancy_transformer_forecasting copy.ipynb
-
-# GitHub Actions workflow excluded because token lacks workflow scope
-.github/workflows/

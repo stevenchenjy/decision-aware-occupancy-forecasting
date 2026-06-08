@@ -1,8 +1,8 @@
-# Simulation Summary: Risk-Constrained Stable Empty-Window Recommendation
+# Offline Evaluation Summary: Risk-Constrained Stable Empty-Window Recommendation
 
 ## Purpose
 
-This simulation converts day-ahead occupancy forecasts into threshold-based empty-window recommendations for facility operations. The operating question is:
+This offline evaluation converts day-ahead occupancy forecasts into threshold-based empty-window recommendations for facility-management decision support. The operating question is:
 
 How much safe shiftable-load opportunity can be identified while keeping occupancy-conflict risk below a chosen constraint?
 
@@ -36,8 +36,9 @@ This shows each model's risk-reward tradeoff instead of a single operating point
 
 Files:
 
-- `results/risk_energy_pareto_frontier.csv`
-- `figures/risk_energy_pareto_frontier.png`
+- `results/energy_risk_tradeoff_threshold_sweep.csv`
+- `results/energy_risk_pareto_frontier.csv`
+- `figures/energy_risk_tradeoff_pareto.png`
 
 ## 3. Energy Opportunity Clarification
 

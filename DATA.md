@@ -57,7 +57,7 @@ decision-aware-occupancy-forecasting/
 
 ## Download Helper
 
-Run:
+After activating the Python environment, run:
 
 ```bash
 python scripts/download_data.py

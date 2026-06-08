@@ -87,16 +87,13 @@ def _plot_model_metrics(results_dir: Path, figures_dir: Path) -> list[Path]:
         return []
     value_vars = [c for c in ["recall_empty", "precision_empty", "f1_empty", "auroc_empty", "auprc_empty"] if c in metrics]
     metric_long = metrics.melt(id_vars="model", value_vars=value_vars, var_name="metric", value_name="value")
-    paths = []
-    for name in ["model_metrics_empty_positive.png", "empty_class_model_metrics.png"]:
-        plt.figure(figsize=(12, 5))
-        sns.barplot(data=metric_long, x="metric", y="value", hue="model")
-        plt.ylim(0, 1)
-        plt.xticks(rotation=20)
-        plt.title("Model metrics with Empty=1 as positive class")
-        plt.legend(loc="lower right", fontsize=8)
-        paths.append(_save_fig(figures_dir / name))
-    return paths
+    plt.figure(figsize=(12, 5))
+    sns.barplot(data=metric_long, x="metric", y="value", hue="model")
+    plt.ylim(0, 1)
+    plt.xticks(rotation=20)
+    plt.title("Model metrics with Empty=1 as positive class")
+    plt.legend(loc="lower right", fontsize=8)
+    return [_save_fig(figures_dir / "model_metrics_empty_positive.png")]
 
 
 def _plot_horizon_metrics(results_dir: Path, figures_dir: Path) -> list[Path]:
@@ -109,15 +106,6 @@ def _plot_horizon_metrics(results_dir: Path, figures_dir: Path) -> list[Path]:
         plt.title("Empty-positive AUPRC by forecast horizon bucket")
         plt.legend(fontsize=8, loc="lower left")
         paths.append(_save_fig(figures_dir / "horizon_bucket_empty_auprc.png"))
-    horizon = _maybe_read_csv(results_dir / "horizon_metrics.csv")
-    if horizon is not None:
-        y_col = "empty_auprc" if "empty_auprc" in horizon else "auprc_empty"
-        plt.figure(figsize=(12, 5))
-        sns.barplot(data=horizon, x="horizon_bucket", y=y_col, hue="model")
-        plt.ylim(0, 1)
-        plt.title("Empty-positive AUPRC by horizon bucket")
-        plt.legend(fontsize=8, loc="lower left")
-        paths.append(_save_fig(figures_dir / "horizon_empty_auprc.png"))
     return paths
 
 
@@ -143,14 +131,6 @@ def _plot_sweeps(results_dir: Path, figures_dir: Path) -> list[Path]:
         paths.append(_save_fig(figures_dir / "energy_risk_tradeoff_pareto.png"))
         if pareto_rows:
             pd.concat(pareto_rows, ignore_index=True).to_csv(results_dir / "energy_risk_pareto_frontier.csv", index=False, encoding="utf-8-sig")
-    legacy = _maybe_read_csv(results_dir / "risk_energy_pareto_frontier.csv")
-    if legacy is not None:
-        plt.figure(figsize=(10, 6.5))
-        sns.lineplot(data=legacy, x="test_occupancy_conflict_rate", y="safe_shiftable_load_kwh", hue="model", marker="o")
-        plt.xlabel("Occupancy conflict rate")
-        plt.ylabel("Safe shiftable-load opportunity (kWh)")
-        plt.title("Risk-energy Pareto frontier")
-        paths.append(_save_fig(figures_dir / "risk_energy_pareto_frontier.png"))
     return paths
 
 
@@ -228,20 +208,16 @@ def _plot_window_and_sensitivity(results_dir: Path, figures_dir: Path) -> list[P
 
 def _plot_importance(results_dir: Path, figures_dir: Path) -> list[Path]:
     paths = []
-    for csv_name, png_name, title in [
-        ("permutation_importance.csv", "feature_importance_permutation_empty_auprc.png", "LightGBM permutation importance: validation Empty-AUPRC drop"),
-        ("lightgbm_feature_importance.csv", "feature_importance_lightgbm.png", "LightGBM feature importance: validation Empty-AUPRC drop"),
-    ]:
-        importance = _maybe_read_csv(results_dir / csv_name)
-        if importance is None or not len(importance):
-            continue
-        top = importance.sort_values("importance", ascending=False).head(18).copy()
-        plt.figure(figsize=(11, 6.5))
-        sns.barplot(data=top, x="importance", y="feature", color="tab:blue")
-        plt.title(title)
-        plt.xlabel("AUPRC drop after feature permutation")
-        plt.ylabel("Feature")
-        paths.append(_save_fig(figures_dir / png_name))
+    importance = _maybe_read_csv(results_dir / "permutation_importance.csv")
+    if importance is None or not len(importance):
+        return paths
+    top = importance.sort_values("importance", ascending=False).head(18).copy()
+    plt.figure(figsize=(11, 6.5))
+    sns.barplot(data=top, x="importance", y="feature", color="tab:blue")
+    plt.title("LightGBM permutation importance: validation Empty-AUPRC drop")
+    plt.xlabel("AUPRC drop after feature permutation")
+    plt.ylabel("Feature")
+    paths.append(_save_fig(figures_dir / "feature_importance_permutation_empty_auprc.png"))
     return paths
 
 
@@ -269,32 +245,30 @@ def _plot_curves(results_dir: Path, figures_dir: Path) -> list[Path]:
     paths.append(_save_fig(figures_dir / "empty_reliability_curve.png"))
     pd.DataFrame(reliability_rows).to_csv(results_dir / "empty_reliability_curve_points.csv", index=False, encoding="utf-8-sig")
 
-    for png_name in ["precision_recall_empty_positive.png", "empty_precision_recall_curve.png"]:
-        plt.figure(figsize=(8.5, 7))
-        for name, prob in probabilities.items():
-            p_empty = np.clip(1.0 - prob.ravel(), 1e-6, 1 - 1e-6)
-            precision, recall, _ = precision_recall_curve(y_empty_flat, p_empty)
-            ap = average_precision_score(y_empty_flat, p_empty)
-            plt.plot(recall, precision, linewidth=1.6, label=f"{name} ({ap:.3f})")
-        plt.xlabel("Recall for Empty")
-        plt.ylabel("Precision for Empty")
-        plt.title("Precision-recall curves with Empty=1")
-        plt.legend(fontsize=8, loc="lower left")
-        paths.append(_save_fig(figures_dir / png_name))
+    plt.figure(figsize=(8.5, 7))
+    for name, prob in probabilities.items():
+        p_empty = np.clip(1.0 - prob.ravel(), 1e-6, 1 - 1e-6)
+        precision, recall, _ = precision_recall_curve(y_empty_flat, p_empty)
+        ap = average_precision_score(y_empty_flat, p_empty)
+        plt.plot(recall, precision, linewidth=1.6, label=f"{name} ({ap:.3f})")
+    plt.xlabel("Recall for Empty")
+    plt.ylabel("Precision for Empty")
+    plt.title("Precision-recall curves with Empty=1")
+    plt.legend(fontsize=8, loc="lower left")
+    paths.append(_save_fig(figures_dir / "precision_recall_empty_positive.png"))
 
-    for png_name in ["roc_empty_positive.png", "empty_roc_curve.png"]:
-        plt.figure(figsize=(8.5, 7))
-        for name, prob in probabilities.items():
-            p_empty = np.clip(1.0 - prob.ravel(), 1e-6, 1 - 1e-6)
-            fpr, tpr, _ = roc_curve(y_empty_flat, p_empty)
-            auc = roc_auc_score(y_empty_flat, p_empty)
-            plt.plot(fpr, tpr, linewidth=1.6, label=f"{name} ({auc:.3f})")
-        plt.plot([0, 1], [0, 1], "--", color="gray", linewidth=1)
-        plt.xlabel("FPR for Empty class")
-        plt.ylabel("TPR for Empty class")
-        plt.title("ROC curves with Empty=1")
-        plt.legend(fontsize=8, loc="lower right")
-        paths.append(_save_fig(figures_dir / png_name))
+    plt.figure(figsize=(8.5, 7))
+    for name, prob in probabilities.items():
+        p_empty = np.clip(1.0 - prob.ravel(), 1e-6, 1 - 1e-6)
+        fpr, tpr, _ = roc_curve(y_empty_flat, p_empty)
+        auc = roc_auc_score(y_empty_flat, p_empty)
+        plt.plot(fpr, tpr, linewidth=1.6, label=f"{name} ({auc:.3f})")
+    plt.plot([0, 1], [0, 1], "--", color="gray", linewidth=1)
+    plt.xlabel("FPR for Empty class")
+    plt.ylabel("TPR for Empty class")
+    plt.title("ROC curves with Empty=1")
+    plt.legend(fontsize=8, loc="lower right")
+    paths.append(_save_fig(figures_dir / "roc_empty_positive.png"))
     return paths
 
 
@@ -381,7 +355,7 @@ def _plot_examples(results_dir: Path, figures_dir: Path) -> list[Path]:
 def _write_manifest(results_dir: Path, figures_dir: Path) -> None:
     rows = []
     for folder in [results_dir, figures_dir]:
-        for path in sorted(folder.glob("*")):
+        for path in sorted(folder.rglob("*")):
             if path.is_file():
                 rows.append({"folder": folder.as_posix(), "file": path.name, "relative_path": path.as_posix(), "bytes": path.stat().st_size, "modified_time": pd.Timestamp.fromtimestamp(path.stat().st_mtime)})
     pd.DataFrame(rows).sort_values(["folder", "file"]).to_csv(results_dir / "current_run_manifest.csv", index=False, encoding="utf-8-sig")

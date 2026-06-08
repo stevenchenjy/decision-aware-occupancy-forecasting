@@ -74,7 +74,13 @@ def main() -> int:
 
     if failures:
         print("\nEnvironment check failed. Install dependencies with:")
-        print("  pip install -r requirements.txt")
+        print("  python -m pip install -r requirements.txt")
+        print("\nRecommended interpreter:")
+        print("  Python 3.11 in a virtualenv or the Conda environment from environment.yml")
+        if any("libomp" in failure.lower() or "lightgbm" in failure.lower() for failure in failures):
+            print("\nmacOS LightGBM note:")
+            print("  If LightGBM fails to load libomp.dylib, install OpenMP first:")
+            print("  brew install libomp")
         print("\nFailures:")
         for failure in failures:
             print(f"  - {failure}")

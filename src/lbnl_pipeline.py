@@ -1276,7 +1276,6 @@ def run_pipeline(config: Config | None = None, make_figures: bool = True, show: 
     model_metrics_df = pd.DataFrame([empty_model_metrics(name, y_test, prob) for name, prob in predictions.items()])
     model_metrics_df = model_metrics_df.sort_values('auprc_empty', ascending=False).reset_index(drop=True)
     model_metrics_df.to_csv(Path(cfg.result_dir) / 'model_metrics_empty_positive.csv', index=False, encoding='utf-8-sig')
-    model_metrics_df.to_csv(Path(cfg.result_dir) / 'model_metrics.csv', index=False, encoding='utf-8-sig')
     seed_metrics_rows = []
     for record in seed_prediction_records:
         row = empty_model_metrics(record['model'], y_test, record['test_pred'])

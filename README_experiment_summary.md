@@ -2,7 +2,7 @@
 
 ## 1. Research Goal
 
-This package evaluates day-ahead occupancy forecasting for identifying stable empty windows in an office building. The downstream goal is facility-management support: HVAC setback, lighting reduction, or controllable-load scheduling during predicted stable empty windows.
+This package evaluates day-ahead occupancy forecasting for identifying stable empty windows in LBNL Building 59 selected south zones. The downstream framing is offline facility-management decision support: estimating where HVAC, lighting, or controllable-load scheduling opportunities may exist during predicted stable empty windows.
 
 The recommendation objective is:
 
@@ -70,7 +70,7 @@ At the same 10% policy:
 | DLinear | 43.87% | 185.1 kWh |
 | Transformer | 9.68% | 97.4 kWh |
 
-Historical Average has strong model-level Empty AUPRC, but it is conservative at low-risk thresholds. LightGBM gives the best practical risk-opportunity tradeoff in the 10% setting.
+Historical Average has strong model-level Empty AUPRC, but it is conservative at low-risk thresholds. LightGBM gives the best practical risk-opportunity tradeoff in the 10% setting for this selected-zone experiment.
 
 ## 10. Limitations
 
@@ -88,13 +88,17 @@ Historical Average has strong model-level Empty AUPRC, but it is conservative at
 - `figures/`: PNG figures for model metrics, threshold tradeoffs, stable windows, examples, and feature importance.
 - `predictions/`: per-model test prediction files.
 - `VALIDITY_CHECKLIST.md`: leakage and validity checklist.
+- `CLAIMS_AND_LIMITATIONS.md`: supported and unsupported claims.
+- `PROFESSOR_REVIEW_GUIDE.md`: short review guide.
+- `RESULTS_SUMMARY.md`: canonical result summary.
 - `requirements.txt`: Python dependency list.
 
 ## 12. How To Rerun
 
 1. Follow `DATA.md` and place the extracted LBNL Building 59 files at the expected local path.
-2. Install dependencies with `pip install -r requirements.txt`, or create the Conda environment from `environment.yml`.
+2. Install dependencies with `python -m pip install -r requirements.txt`, or create the Conda environment from `environment.yml`.
 3. Run `python scripts/check_environment.py`.
-4. Run `python scripts/run_all.py` to execute the full Python pipeline.
-5. Run `python scripts/generate_figures.py` to redraw figures from saved result tables without retraining.
-6. Open `LBNL_occupancy_forecasting_main.ipynb` to review the report.
+4. Run `python -m pytest -q`.
+5. Run `python scripts/run_all.py` to execute the full Python pipeline.
+6. Run `python scripts/generate_figures.py` to redraw figures from saved result tables without retraining.
+7. Open `LBNL_occupancy_forecasting_main.ipynb` to review the report.

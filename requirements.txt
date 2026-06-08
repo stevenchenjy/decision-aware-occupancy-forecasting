@@ -3,6 +3,8 @@ pandas>=2.2,<3.0
 numpy>=1.26,<2.0
 scikit-learn>=1.4,<2.0
 lightgbm>=4.0,<5.0
+# macOS note: if LightGBM cannot load libomp.dylib, install OpenMP first
+# with `brew install libomp`, or use the Conda environment in environment.yml.
 # Avoid a local-version pin such as torch==...+cpu; that requires a custom
 # package index and breaks plain `pip install -r requirements.txt`.
 torch>=2.2,<3.0

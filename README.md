@@ -1,24 +1,51 @@
 # Decision-Aware Occupancy Forecasting Research Prototype
 
-This repository evaluates day-ahead occupancy forecasting for identifying stable empty windows in an office building. The current implementation is best described as:
+This repository evaluates day-ahead occupancy forecasting for identifying stable empty windows and estimating safe shiftable-load opportunity under occupancy-conflict constraints.
 
-`occupancy forecasting + risk-constrained recommendation post-processing`
+The current implementation is best described as:
 
-The models forecast future occupancy probabilities. A decision layer then selects empty-window recommendations by sweeping Empty-probability thresholds on the validation split and evaluating the selected policy on the held-out test split.
+`occupancy forecasting + validation-selected risk-constrained recommendation evaluation`
+
+It does not implement a deployed controller, verified energy-savings study, reinforcement-learning scheduler, or learned decision-aware loss.
+
+## Quick Start For Review
+
+For a fast first pass, read:
+
+1. `PROFESSOR_REVIEW_GUIDE.md` - 10-minute professor-facing overview.
+2. `RESULTS_SUMMARY.md` - main numbers and canonical result files.
+3. `VALIDITY_CHECKLIST.md` - leakage-prevention and evaluation checks.
+4. `CLAIMS_AND_LIMITATIONS.md` - supported and unsupported claims.
+5. `REPRODUCING.md` - full rerun instructions.
 
 ## What The Project Does
 
-- Builds 15-minute occupancy labels from the LBNL Building 59 south-zone occupancy streams.
+- Builds 15-minute occupancy labels from LBNL Building 59 selected south-zone occupancy streams.
 - Aligns occupancy, WiFi, weather, interior temperature, and electrical meter streams.
-- Trains several forecasting baselines: Historical Average, LightGBM, Random Forest, DLinear, and Transformer.
+- Trains and evaluates Historical Average, LightGBM, Random Forest, DLinear, and Transformer baselines.
 - Converts forecasts into stable empty-window recommendations.
-- Reports occupancy-conflict risk and safe shiftable-load opportunity under validation-selected risk constraints.
+- Selects Empty probability thresholds on validation daily schedules and evaluates them on held-out test daily schedules.
+- Reports occupancy-conflict risk and offline safe shiftable-load opportunity.
 
-## Safe Shiftable-Load Opportunity
+## Main Reported Result
+
+Under the 10% validation-selected occupancy-conflict policy, LightGBM selected an Empty probability threshold of 0.95.
+
+On the held-out test daily schedules:
+
+- Test occupancy-conflict rate: 4.15%.
+- Safe shiftable-load opportunity: 493.9 kWh.
+- Recommended stable windows: 19.
+- Safe stable windows: 16.
+- Test target period: 2019-01-09 to 2019-02-21 local Pacific time.
+
+Historical Average has the highest model-level Empty AUPRC, showing strong periodic occupancy structure. LightGBM gives the strongest practical risk-opportunity tradeoff under the 10% recommendation policy in this experiment.
+
+## Important Interpretation
 
 Safe shiftable-load opportunity is an offline estimate of controllable load that coincides with recommended intervals that were actually empty.
 
-For the default setting:
+Default controllable-load proxy:
 
 `P_controllable = hvac_S + lig_S`
 
@@ -26,51 +53,78 @@ For each safe recommended 15-minute interval:
 
 `kWh = P_controllable * 0.25`
 
-Intervals with occupancy conflicts are excluded from the safe opportunity total.
-
-This is not verified energy savings. The repository does not include a counterfactual building simulation, BMS intervention, thermal-comfort model, or occupant-response study. The energy numbers should be interpreted as offline opportunity estimates only.
-
-## Main Reported Result
-
-Under the 10% validation-selected occupancy-conflict policy, LightGBM selected an Empty-probability threshold of 0.95. On the test daily schedules, it reported:
-
-- Test occupancy conflict rate: 4.15%
-- Safe shiftable-load opportunity: 493.9 kWh
-- Recommended windows: 19
-- Safe windows: 16
-- Test period: 2019-01-09 to 2019-02-21 local Pacific time
-
-Historical Average has the highest model-level Empty AUPRC, which shows that periodic occupancy structure is strong. LightGBM gives a stronger practical risk-opportunity tradeoff under the 10% recommendation policy in the current experiment.
+This is not verified energy savings. The repository does not include a counterfactual building simulation, BMS intervention, thermal-comfort model, occupant-response study, or real deployment evaluation.
 
 ## Repository Layout
 
-- `src/` contains reusable data preparation, modeling, evaluation, policy, energy-accounting, plotting, and pipeline code.
-- `scripts/run_all.py` runs the full Python pipeline and writes outputs.
-- `scripts/generate_figures.py` redraws figures from saved result CSVs without retraining models.
-- `LBNL_occupancy_forecasting_main.ipynb` is a reporting notebook for inspecting saved tables and figures.
-- `results/`, `figures/`, and `predictions/` are output folders.
+- `src/` - reusable data preparation, feature engineering, modeling, evaluation, policy, energy-accounting, plotting, and pipeline code.
+- `scripts/run_all.py` - full Python pipeline for data preparation, model training, prediction export, result tables, and figures.
+- `scripts/generate_figures.py` - redraws figures from saved result CSVs without retraining models.
+- `scripts/check_environment.py` - checks Python version, third-party packages, and local module imports.
+- `LBNL_occupancy_forecasting_main.ipynb` - reporting-only notebook for inspecting saved tables and figures.
+- `results/` - canonical CSV outputs.
+- `figures/` - canonical PNG figures.
+- `predictions/` - per-model test prediction CSV files.
+- `results/archive/` and `figures/archive/` - preserved legacy duplicate or alias outputs.
+
+## Canonical Outputs
+
+Use these files for review and paper drafting:
+
+| Purpose | Canonical file |
+|---|---|
+| Model metrics | `results/model_metrics_empty_positive.csv` |
+| Validation-selected thresholds | `results/selected_threshold_policies.csv` |
+| Test policy results | `results/threshold_policy_results_test.csv` |
+| Energy-risk threshold sweep | `results/energy_risk_tradeoff_threshold_sweep.csv` |
+| Pareto frontier | `results/energy_risk_pareto_frontier.csv` |
+| Stable-window summary | `results/stable_window_metrics.csv` |
+| Detailed continuous-window metrics | `results/continuous_empty_window_policy_results_test.csv` |
+| Energy sensitivity | `results/energy_sensitivity_analysis.csv` |
+| Test prediction export | `results/forecast_predictions_test_all_models.csv` |
+
+Top figures are listed in `PROFESSOR_REVIEW_GUIDE.md`.
 
 ## Reproduce The Results
 
-1. Read [DATA.md](DATA.md) and download the LBNL Building 59 dataset from Dryad.
+The raw LBNL data is not committed. Full reproduction requires downloading the Dryad dataset first.
+
+1. Read `DATA.md` and download the LBNL Building 59 dataset from Dryad.
 2. Place the extracted data at:
 
    `doi_10_7941_D1N33Q__v20220202/Building_59/Bldg59_clean data/`
 
-3. Create an environment with Python 3.10-3.12.
-4. Install dependencies:
+3. Create an environment with Python 3.10-3.12. Python 3.11 is recommended.
+
+   Conda path:
 
    ```bash
-   pip install -r requirements.txt
+   conda env create -f environment.yml
+   conda activate decision-aware-occupancy
    ```
 
-5. Check the environment:
+   Virtualenv path:
+
+   ```bash
+   python3.11 -m venv .venv
+   source .venv/bin/activate
+   python -m pip install --upgrade pip
+   python -m pip install -r requirements.txt
+   ```
+
+4. Check the environment:
 
    ```bash
    python scripts/check_environment.py
    ```
 
-6. Execute the full Python pipeline:
+5. Run unit tests:
+
+   ```bash
+   python -m pytest -q
+   ```
+
+6. Execute the full pipeline:
 
    ```bash
    python scripts/run_all.py
@@ -84,16 +138,18 @@ To regenerate figures from existing result tables without retraining:
 python scripts/generate_figures.py
 ```
 
-Open `LBNL_occupancy_forecasting_main.ipynb` after running the scripts to review the report.
+Figure regeneration reads saved CSV files from `results/` and may take several minutes depending on the machine.
+
+Open `LBNL_occupancy_forecasting_main.ipynb` after running the scripts to review the saved report artifacts.
 
 ## Current Limitations
 
 - Single-building, selected-zone evaluation.
-- Short held-out test period with only 43 non-overlapping daily schedules.
+- Short held-out recommendation test period with 43 non-overlapping daily schedules.
 - Model metrics use overlapping rolling forecast intervals, so effective sample size is smaller than the interval count.
 - Threshold selection is validation-only, but risk estimates are fragile because daily validation/test blocks are limited.
-- Energy opportunity uses realized loads offline and is not deployable expected savings.
-- Model training uses standard BCE losses. A true decision-aware loss is not implemented yet.
+- Energy opportunity uses realized recorded loads offline and is not deployable expected savings.
+- Model training uses standard occupancy losses; the decision-aware part is the evaluation and threshold policy.
 - Transformer and DLinear baselines are exploratory and lightly tuned.
 
-See [LIMITATIONS.md](LIMITATIONS.md) and [ROADMAP.md](ROADMAP.md) for reviewer-facing caveats and planned improvements.
+See `CLAIMS_AND_LIMITATIONS.md`, `LIMITATIONS.md`, and `ROADMAP.md` for caveats and planned improvements.
