@@ -1,11 +1,15 @@
-pandas==2.3.3
-numpy==1.26.4
-scikit-learn==1.8.0
-lightgbm==4.6.0
-torch==2.11.0+cpu
-matplotlib==3.10.8
-seaborn==0.13.2
-nbformat==5.10.4
-nbclient==0.10.4
-ipykernel
-openpyxl
+# Python 3.10-3.12 is recommended. Python 3.11 was used for review-readiness CI.
+pandas>=2.2,<3.0
+numpy>=1.26,<2.0
+scikit-learn>=1.4,<2.0
+lightgbm>=4.0,<5.0
+# Avoid a local-version pin such as torch==...+cpu; that requires a custom
+# package index and breaks plain `pip install -r requirements.txt`.
+torch>=2.2,<3.0
+matplotlib>=3.8,<4.0
+seaborn>=0.13,<0.14
+nbformat>=5.10,<6.0
+nbclient>=0.10,<0.11
+ipykernel>=6.29
+openpyxl>=3.1
+pytest>=8.0

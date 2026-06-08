@@ -6,6 +6,15 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+*.egg-info/
 .ipynb_checkpoints/
 
 # Jupyter runtime/temp
@@ -26,3 +35,15 @@ Rec system/
 # Large raw data, if any
 doi_10_7941_D1N33Q__v20220202/
 *.zip
+
+# Local execution logs and scratch outputs
+*.log
+tmp/
+scratch/
+
+# Old development notebooks
+LBNL_occupancy_transformer_forecasting.ipynb
+LBNL_occupancy_transformer_forecasting copy.ipynb
+
+# GitHub Actions workflow excluded because token lacks workflow scope
+.github/workflows/

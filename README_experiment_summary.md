@@ -92,8 +92,8 @@ Historical Average has strong model-level Empty AUPRC, but it is conservative at
 
 ## 12. How To Rerun
 
-1. Activate the OCR environment or install dependencies from `requirements.txt`.
-2. Open `LBNL_occupancy_forecasting_main.ipynb`.
-3. Run all cells from top to bottom.
-4. The notebook writes outputs to `results/` and `figures/`.
-5. The current delivery also includes per-model prediction files in `predictions/`.
+1. Follow `DATA.md` and place the extracted LBNL Building 59 files at the expected local path.
+2. Install dependencies with `pip install -r requirements.txt`, or create the Conda environment from `environment.yml`.
+3. Run `python scripts/check_environment.py`.
+4. Run `python scripts/run_all.py` to execute `LBNL_occupancy_forecasting_main.ipynb` with `nbclient`.
+5. The notebook writes outputs to `results/`, `figures/`, and `predictions/`.
