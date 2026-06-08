@@ -1,6 +1,6 @@
-# Roadmap
+# Future Work
 
-Priority-ranked improvements for review readiness and future publication.
+Priority-ranked improvements for a stronger paper or later research phase. These are not required for the current professor-review package.
 
 | Priority | Improvement | Effort | Benefit | Research Impact |
 |---:|---|---|---|---|

@@ -21,6 +21,16 @@ This repository evaluates an offline recommendation framework:
 - Test daily schedules: 43 non-overlapping daily forecast horizons.
 - Empty is the positive class for recommendation metrics.
 
+## Method Notes
+
+- Raw timestamps are treated as UTC and converted to `America/Los_Angeles` before generating hour, day-of-week, weekend, month, and holiday features.
+- Raw occupancy uses `occupied=1`; recommendation evaluation flips the positive class to `Empty=1`.
+- The pipeline uses chronological train/validation/test splits with 24.25-hour gaps.
+- Historical Average uses training labels only.
+- Rolling occupancy features use `arr[anchor-window:anchor]`, excluding current and future labels.
+- Missing values use causal forward-fill plus fixed 0.0 for leading gaps.
+- Future sensor values and load variables are excluded from model inputs.
+
 ## Models Evaluated
 
 - Historical Average
@@ -34,6 +44,12 @@ TFT and PatchTST are not part of the main experiment because a fair comparison w
 ## Main Finding
 
 Historical Average has the highest model-level Empty AUPRC, showing that periodic occupancy structure is strong. Under the 10% validation-selected recommendation policy, LightGBM provides the strongest practical risk-opportunity tradeoff in the current experiment.
+
+The recommendation objective is:
+
+`maximize safe shiftable-load opportunity subject to occupancy conflict rate <= delta`
+
+with validation-selected delta values of 5%, 10%, and 20%.
 
 ## 10% Policy Results
 
@@ -105,3 +121,11 @@ The repository does not include a counterfactual building simulation, BMS interv
 - Prediction export: `results/forecast_predictions_test_all_models.csv`
 
 Legacy duplicate or alias outputs are preserved under `results/archive/`.
+
+## First Figures To Inspect
+
+- `figures/energy_risk_tradeoff_pareto.png` - threshold sweep showing risk versus safe opportunity.
+- `figures/threshold_policy_safe_opportunity.png` - safe opportunity under validation-selected risk constraints.
+- `figures/threshold_policy_occupancy_conflict.png` - held-out test conflict rate under selected policies.
+- `figures/stable_window_sensitivity.png` - sensitivity to minimum empty-window duration.
+- `figures/model_metrics_empty_positive.png` - Empty-positive model metrics.

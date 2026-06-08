@@ -12,11 +12,10 @@ It does not implement a deployed controller, verified energy-savings study, rein
 
 For a fast first pass, read:
 
-1. `PROFESSOR_REVIEW_GUIDE.md` - 10-minute professor-facing overview.
-2. `RESULTS_SUMMARY.md` - main numbers and canonical result files.
-3. `VALIDITY_CHECKLIST.md` - leakage-prevention and evaluation checks.
-4. `CLAIMS_AND_LIMITATIONS.md` - supported and unsupported claims.
-5. `REPRODUCING.md` - full rerun instructions.
+1. `RESULTS_SUMMARY.md` - main numbers, method notes, and canonical result files.
+2. `VALIDITY_CHECKLIST.md` - leakage-prevention and evaluation checks.
+3. `CLAIMS_AND_LIMITATIONS.md` - supported claims, unsupported claims, and wording boundaries.
+4. `REPRODUCING.md` - full rerun instructions.
 
 ## What The Project Does
 
@@ -67,23 +66,15 @@ This is not verified energy savings. The repository does not include a counterfa
 - `predictions/` - per-model test prediction CSV files.
 - `results/archive/` and `figures/archive/` - preserved legacy duplicate or alias outputs.
 
-## Canonical Outputs
+## Detailed Documents
 
-Use these files for review and paper drafting:
-
-| Purpose | Canonical file |
-|---|---|
-| Model metrics | `results/model_metrics_empty_positive.csv` |
-| Validation-selected thresholds | `results/selected_threshold_policies.csv` |
-| Test policy results | `results/threshold_policy_results_test.csv` |
-| Energy-risk threshold sweep | `results/energy_risk_tradeoff_threshold_sweep.csv` |
-| Pareto frontier | `results/energy_risk_pareto_frontier.csv` |
-| Stable-window summary | `results/stable_window_metrics.csv` |
-| Detailed continuous-window metrics | `results/continuous_empty_window_policy_results_test.csv` |
-| Energy sensitivity | `results/energy_sensitivity_analysis.csv` |
-| Test prediction export | `results/forecast_predictions_test_all_models.csv` |
-
-Top figures are listed in `PROFESSOR_REVIEW_GUIDE.md`.
+- `RESULTS_SUMMARY.md` - main numbers, method notes, canonical result files, and first figures to inspect.
+- `VALIDITY_CHECKLIST.md` - leakage prevention, evaluation protocol, and data-splitting validation.
+- `CLAIMS_AND_LIMITATIONS.md` - supported claims, unsupported claims, and wording boundaries.
+- `REPRODUCING.md` - full environment, data, test, pipeline, and figure-regeneration instructions.
+- `DATA.md` - raw Dryad data placement instructions.
+- `SIMULATION_SUMMARY.md` - detailed stable-window and risk-opportunity evaluation notes.
+- `FUTURE_WORK.md` - future research and paper-strengthening tasks.
 
 ## Reproduce The Results
 
@@ -152,4 +143,4 @@ Open `LBNL_occupancy_forecasting_main.ipynb` after running the scripts to review
 - Model training uses standard occupancy losses; the decision-aware part is the evaluation and threshold policy.
 - Transformer and DLinear baselines are exploratory and lightly tuned.
 
-See `CLAIMS_AND_LIMITATIONS.md`, `LIMITATIONS.md`, and `ROADMAP.md` for caveats and planned improvements.
+Detailed claim boundaries are in `CLAIMS_AND_LIMITATIONS.md`. Leakage and split checks are in `VALIDITY_CHECKLIST.md`. Future-work items are in `FUTURE_WORK.md`.
