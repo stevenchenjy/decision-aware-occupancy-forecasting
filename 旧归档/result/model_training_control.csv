@@ -1,6 +1,0 @@
-﻿model,seeds,training_budget,early_stopping,feature_input
-Historical average,deterministic,train-only slot averages,not applicable,known future local time slot only
-LightGBM,"42, 43, 44",200000 sampled rows per seed; fixed hyperparameters,not used,same tabular feature matrix
-Random forest,"42, 43, 44",200000 sampled rows per seed; fixed hyperparameters,not used,same tabular feature matrix
-DLinear,"42, 43, 44",max 12 epochs per seed,patience=4,same historical features + known future local time
-Transformer,"42, 43, 44",max 12 epochs per seed,patience=4,same historical features + known future local time

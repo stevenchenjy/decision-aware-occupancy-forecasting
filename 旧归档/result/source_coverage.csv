@@ -1,6 +1,0 @@
-﻿source,file,raw_rows,local_start,local_end,used_columns,mean_coverage_before_fill
-WiFi association counts,wifi.csv,101047,2018-05-21 17:00:00-07:00,2020-12-31 15:55:00-08:00,"wifi_south_total, wifi_south_mean",0.18430318403816304
-site weather,site_weather.csv,105217,2017-12-31 16:00:00-08:00,2020-12-31 16:00:00-08:00,"air_temp_set_1, air_temp_set_2, dew_point_temperature_set_1d, relative_humidity_set_1, solar_radiation_set_1",1.0
-interior zone temperature,zone_temp_interior.csv,149696,2018-02-21 16:30:00-08:00,2020-12-31 16:00:00-08:00,temp_interior_mean,0.9944345587400144
-south electrical meters,ele.csv,103048,2017-12-31 17:00:00-08:00,2020-12-31 16:00:00-08:00,"mels_S, lig_S, hvac_S, ele_south_total",0.919547192670276
-zone CO2,zone_co2.csv,565481,2019-08-18 18:33:00-07:00,2020-12-31 16:00:00-08:00,(excluded),0.0

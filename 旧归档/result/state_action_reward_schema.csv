@@ -1,5 +1,0 @@
-﻿field,definition
-state,"Past occupancy sequence, issue-time sensors, known future calendar features, current forecast probabilities."
-action,Recommend or do not recommend shifting a controllable load/schedule into a predicted empty interval.
-reward,Safe controllable kWh opportunity minus occupancy-conflict penalty and missed-opportunity penalty.
-transition,Advance one interval or one decision horizon; future integration can connect this table to Sinergym/EnergyPlus.

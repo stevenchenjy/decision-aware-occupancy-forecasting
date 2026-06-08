@@ -1,4 +1,0 @@
-﻿todo,detail
-decision_focused_loss,Total Loss = BCE occupancy loss + lambda_fp * false-empty penalty + lambda_miss * missed-safe-opportunity penalty.
-rl_environment_adapter,"Expose forecast state, threshold/action, and safe_shiftable_load_opportunity reward for sequential control simulation."
-appendix_advanced_models,"Run TFT/PatchTST only with matched splits, feature inputs, seeds, and tuning budget before comparing in main text."

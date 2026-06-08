@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# Jupyter runtime/temp
+results/kernels/
+results/jupyter_config/
+results/jupyter_data/
+results/jupyter_runtime/
+results/ipython/
+
+# Old archives
+旧归档/
+result/
+figure/
+
+# Nested git repo
+Rec system/
+
+# Large raw data, if any
+doi_10_7941_D1N33Q__v20220202/
+*.zip

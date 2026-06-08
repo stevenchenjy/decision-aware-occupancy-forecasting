@@ -1,5 +1,0 @@
-﻿check,status,evidence
-source_documentation_timezone,not_explicitly_stated,"README and metadata identify Berkeley, CA but do not explicitly state timestamp timezone."
-solar_radiation_peak_test,supports_raw_utc,"Raw timestamp solar peak is around hour 21; after UTC->Pacific conversion it peaks around local hour 14, consistent with daylight."
-time_feature_basis,pass,All hour/day/weekend/holiday features are generated after UTC->Pacific conversion.
-raw_hour_10_12_empty_anomaly,explained,"Raw 10:00-12:00 UTC maps to early morning Pacific time for much of the data, so apparent late-morning emptiness was a timezone artifact before conversion."
