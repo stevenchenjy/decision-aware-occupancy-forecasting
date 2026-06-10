@@ -113,12 +113,18 @@ def _plot_horizon_metrics(results_dir: Path, figures_dir: Path) -> list[Path]:
     paths = []
     bucket = _maybe_read_csv(results_dir / "horizon_bucket_metrics_empty_positive.csv")
     if bucket is not None:
-        plt.figure(figsize=(12, 5))
-        sns.barplot(data=bucket, x="horizon_bucket", y="auprc_empty", hue="model")
-        plt.ylim(0, 1)
-        plt.title("Empty-positive AUPRC by forecast horizon bucket")
-        plt.legend(fontsize=8, loc="lower left")
-        paths.append(_save_fig(figures_dir / "horizon_bucket_empty_auprc.png"))
+        fig, ax = plt.subplots(figsize=(12, 5))
+        sns.barplot(data=bucket, x="horizon_bucket", y="auprc_empty", hue="model", ax=ax)
+        ax.set_ylim(0, 1)
+        ax.set_title("Empty-positive AUPRC by forecast horizon bucket")
+        ax.set_ylabel("Empty-class AUPRC")
+        ax.legend(fontsize=8, loc="upper left", bbox_to_anchor=(1.02, 1.0), borderaxespad=0)
+        fig.subplots_adjust(right=0.78)
+        path = figures_dir / "horizon_bucket_empty_auprc.png"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(path, dpi=180)
+        plt.close(fig)
+        paths.append(path)
     return paths
 
 
@@ -221,9 +227,9 @@ def _plot_policy_outputs(results_dir: Path, figures_dir: Path) -> list[Path]:
     paths = []
     plt.figure(figsize=(12, 5.5))
     sns.barplot(data=policy, x="risk_delta_label", y="safe_shiftable_load_opportunity_kwh", hue="model")
-    plt.title("Constrained threshold policy: maximize safe opportunity under risk delta")
-    plt.xlabel("Allowed occupancy conflict rate delta")
-    plt.ylabel("Safe shiftable-load opportunity (kWh)")
+    plt.title("Safe opportunity from validation-selected policies evaluated on test")
+    plt.xlabel("Allowed validation conflict rate")
+    plt.ylabel("Safe shiftable-load opportunity (kWh, offline estimate)")
     plt.legend(fontsize=8)
     paths.append(_save_fig(figures_dir / "threshold_policy_safe_opportunity.png"))
 
@@ -253,13 +259,19 @@ def _plot_window_and_sensitivity(results_dir: Path, figures_dir: Path) -> list[P
     if window is not None:
         plot = window[np.isclose(window["risk_delta"], 0.10)].copy()
         if len(plot):
-            plt.figure(figsize=(12, 5.5))
-            sns.barplot(data=plot, x="minimum_empty_window_hours", y="window_level_occupancy_conflict_rate", hue="model")
-            plt.title("Continuous empty-window conflict rate by minimum duration, delta=10% policy")
-            plt.xlabel("Minimum empty-window duration (hours)")
-            plt.ylabel("Window-level occupancy conflict rate")
-            plt.legend(fontsize=8)
-            paths.append(_save_fig(figures_dir / "continuous_empty_window_conflict_rate.png"))
+            fig, ax = plt.subplots(figsize=(12, 5.5))
+            sns.barplot(data=plot, x="minimum_empty_window_hours", y="window_level_occupancy_conflict_rate", hue="model", ax=ax)
+            ax.set_title("Continuous empty-window conflict rate by minimum duration, delta=10% policy")
+            ax.set_xlabel("Minimum empty-window duration (hours)")
+            ax.set_ylabel("Window-level occupancy conflict rate")
+            ax.legend(fontsize=8)
+            fig.text(0.02, 0.02, "Missing bars indicate zero conflict, not missing data.", ha="left", va="bottom", fontsize=8)
+            fig.subplots_adjust(bottom=0.16)
+            path = figures_dir / "continuous_empty_window_conflict_rate.png"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            fig.savefig(path, dpi=180)
+            plt.close(fig)
+            paths.append(path)
     stable = _maybe_read_csv(results_dir / "stable_window_metrics.csv")
     if stable is not None:
         plot = stable[np.isclose(stable["risk_delta"], 0.10)].copy() if "risk_delta" in stable else stable
@@ -418,10 +430,18 @@ def _plot_examples(results_dir: Path, figures_dir: Path) -> list[Path]:
         if "actual_occupied" in example:
             ax.fill_between(example["date"], 0, example["actual_occupied"], step="post", alpha=0.22, label="actual occupied")
         if "recommend_empty_stable" in example:
+            recommended_label_added = False
             for i, is_rec in enumerate(example["recommend_empty_stable"].astype(bool)):
                 if is_rec:
                     start = example["date"].iloc[i]
-                    ax.axvspan(start, start + pd.Timedelta(minutes=15), color="tab:green", alpha=0.12)
+                    ax.axvspan(
+                        start,
+                        start + pd.Timedelta(minutes=15),
+                        color="tab:green",
+                        alpha=0.12,
+                        label="Recommended empty window" if not recommended_label_added else None,
+                    )
+                    recommended_label_added = True
         ax.set_ylim(-0.02, 1.05)
         ax.set_title(label.replace("_", " ").title())
         ax.set_ylabel("Probability / occupancy")
