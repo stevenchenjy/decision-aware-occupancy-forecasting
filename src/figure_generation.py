@@ -10,6 +10,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.calibration import calibration_curve
 from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
+from matplotlib.lines import Line2D
 
 from src.recommendation_policy import stable_empty_mask
 
@@ -44,6 +45,18 @@ def _model_name_from_slug(slug: str, model_names: list[str]) -> str:
         "transformer": "Transformer",
     }
     return lookup.get(slug, fallback.get(slug, slug.replace("_", " ").title()))
+
+
+def _pareto_efficient_frontier(part: pd.DataFrame) -> pd.DataFrame:
+    """Return non-dominated points for minimizing conflict and maximizing opportunity."""
+    x_col = "occupancy_conflict_rate"
+    y_col = "safe_shiftable_load_opportunity_kwh"
+    ordered = part.sort_values([x_col, y_col], ascending=[True, False]).copy()
+    ordered = ordered.drop_duplicates(subset=[x_col], keep="first")
+    previous_best = ordered[y_col].cummax().shift(fill_value=-np.inf)
+    frontier = ordered[ordered[y_col] > previous_best].copy()
+    frontier["pareto_frontier"] = True
+    return frontier
 
 
 def _prediction_matrices(results_dir: Path, split: str = "test") -> tuple[np.ndarray, dict[str, np.ndarray], pd.DataFrame]:
@@ -113,22 +126,87 @@ def _plot_sweeps(results_dir: Path, figures_dir: Path) -> list[Path]:
     paths = []
     sweep = _maybe_read_csv(results_dir / "energy_risk_tradeoff_threshold_sweep.csv")
     if sweep is not None:
+        selected_thresholds = _maybe_read_csv(results_dir / "selected_threshold_policies.csv")
+        selected_test = _maybe_read_csv(results_dir / "threshold_policy_results_test.csv")
+        selected = None
+        if selected_thresholds is not None and selected_test is not None:
+            selected = selected_thresholds[
+                [
+                    "model",
+                    "risk_delta",
+                    "selected_empty_probability_threshold",
+                    "validation_occupancy_conflict_rate",
+                ]
+            ].merge(
+                selected_test[
+                    [
+                        "model",
+                        "risk_delta",
+                        "occupancy_conflict_rate",
+                        "safe_shiftable_load_opportunity_kwh",
+                    ]
+                ],
+                on=["model", "risk_delta"],
+                how="inner",
+            )
+            selected = selected.rename(
+                columns={
+                    "risk_delta": "validation_constraint",
+                    "occupancy_conflict_rate": "test_conflict_rate",
+                    "safe_shiftable_load_opportunity_kwh": "test_safe_opportunity_kwh",
+                }
+            )
+            selected["test_constraint_result"] = np.where(
+                selected["test_conflict_rate"] <= selected["validation_constraint"],
+                "pass",
+                "test violation",
+            )
+            selected.to_csv(results_dir / "validation_selected_policy_test_outcomes.csv", index=False, encoding="utf-8-sig")
         pareto_rows = []
-        plt.figure(figsize=(10, 6.5))
+        fig, ax = plt.subplots(figsize=(11.5, 6.8))
+        palette = dict(zip(sweep["model"].drop_duplicates(), sns.color_palette(n_colors=sweep["model"].nunique())))
         for model, part in sweep.groupby("model"):
-            part = part.sort_values("occupancy_conflict_rate")
-            plt.plot(part["occupancy_conflict_rate"], part["safe_shiftable_load_opportunity_kwh"], marker="o", markersize=2.5, linewidth=1.2, alpha=0.35, label=f"{model} sweep")
-            frontier = part.loc[part["safe_shiftable_load_opportunity_kwh"].cummax() == part["safe_shiftable_load_opportunity_kwh"]].copy()
-            frontier["pareto_frontier"] = True
+            color = palette[model]
+            part = part.sort_values(["occupancy_conflict_rate", "safe_shiftable_load_opportunity_kwh"], ascending=[True, False])
+            ax.scatter(
+                part["occupancy_conflict_rate"],
+                part["safe_shiftable_load_opportunity_kwh"],
+                s=18,
+                alpha=0.22,
+                color=color,
+                edgecolors="none",
+            )
+            frontier = _pareto_efficient_frontier(part)
             pareto_rows.append(frontier)
-            plt.plot(frontier["occupancy_conflict_rate"], frontier["safe_shiftable_load_opportunity_kwh"], linewidth=2.2)
-        for delta in [0.05, 0.10, 0.20]:
-            plt.axvline(delta, color="gray", linestyle="--", linewidth=0.9)
-        plt.xlabel("Occupancy conflict rate = false empty recommendations / all recommendations")
-        plt.ylabel("Safe shiftable-load opportunity (kWh)")
-        plt.title("Energy-risk tradeoff threshold sweep with Pareto frontiers")
-        plt.legend(fontsize=7, ncol=2)
-        paths.append(_save_fig(figures_dir / "energy_risk_tradeoff_pareto.png"))
+            ax.plot(
+                frontier["occupancy_conflict_rate"],
+                frontier["safe_shiftable_load_opportunity_kwh"],
+                color=color,
+                linewidth=2.2,
+                label=model,
+            )
+        for delta, label in [(0.05, "5% risk constraint"), (0.10, "10% risk constraint"), (0.20, "20% risk constraint")]:
+            ax.axvline(delta, color="gray", linestyle="--", linewidth=0.9)
+            ax.text(delta + 0.003, ax.get_ylim()[1] * 0.96, label, fontsize=8, color="dimgray", rotation=90, va="top")
+        ax.set_xlabel("Test occupancy conflict rate")
+        ax.set_ylabel("Safe shiftable-load opportunity (kWh, offline estimate)")
+        ax.set_title("Risk-opportunity threshold sweep with Pareto-efficient frontiers")
+        model_handles = [Line2D([0], [0], color=color, linewidth=2.2, label=model) for model, color in palette.items()]
+        ax.legend(
+            handles=model_handles,
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1.0),
+            borderaxespad=0,
+            fontsize=8,
+        )
+        caption = "Vertical dashed lines show risk constraints. Solid lines show Pareto-efficient threshold choices. Transparent points show all tested thresholds."
+        fig.text(0.02, 0.025, caption, ha="left", va="bottom", fontsize=8)
+        fig.subplots_adjust(right=0.76, bottom=0.18)
+        path = figures_dir / "energy_risk_tradeoff_pareto.png"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(path, dpi=180)
+        plt.close(fig)
+        paths.append(path)
         if pareto_rows:
             pd.concat(pareto_rows, ignore_index=True).to_csv(results_dir / "energy_risk_pareto_frontier.csv", index=False, encoding="utf-8-sig")
     return paths

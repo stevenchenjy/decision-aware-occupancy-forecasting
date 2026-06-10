@@ -16,6 +16,7 @@ import time
 import warnings
 from dataclasses import asdict, dataclass
 from pathlib import Path
+from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -766,6 +767,16 @@ def evaluate_selected_policies(selected_df, pred_dict, anchors, y_occ, cfg, spli
 def slugify_model_name(name):
     return ''.join(ch.lower() if ch.isalnum() else '_' for ch in str(name)).strip('_')
 
+def pareto_efficient_frontier(part):
+    x_col = 'occupancy_conflict_rate'
+    y_col = 'safe_shiftable_load_opportunity_kwh'
+    ordered = part.sort_values([x_col, y_col], ascending=[True, False]).copy()
+    ordered = ordered.drop_duplicates(subset=[x_col], keep='first')
+    previous_best = ordered[y_col].cummax().shift(fill_value=-np.inf)
+    frontier = ordered[ordered[y_col] > previous_best].copy()
+    frontier['pareto_frontier'] = True
+    return frontier
+
 def save_all_model_predictions(split_name, anchors, y_occ, pred_dict):
     pos = future_positions(anchors, cfg.horizon_steps)
     out = pd.DataFrame({
@@ -953,22 +964,54 @@ def generate_figures_from_pipeline_state(show: bool = False):
     plt.legend(fontsize=8, loc='lower left')
     save_fig(Path(cfg.figure_dir) / 'horizon_bucket_empty_auprc.png')
     pareto_rows = []
-    plt.figure(figsize=(10, 6.5))
+    fig, ax = plt.subplots(figsize=(11.5, 6.5))
+    palette = dict(zip(test_sweep_df['model'].drop_duplicates(), sns.color_palette(n_colors=test_sweep_df['model'].nunique())))
     for model, part in test_sweep_df.groupby('model'):
-        part = part.sort_values('occupancy_conflict_rate')
-        plt.plot(part['occupancy_conflict_rate'], part['safe_shiftable_load_opportunity_kwh'], marker='o', markersize=2.5, linewidth=1.2, alpha=0.35, label=f'{model} sweep')
-        frontier = part.loc[part['safe_shiftable_load_opportunity_kwh'].cummax() == part['safe_shiftable_load_opportunity_kwh']].copy()
-        frontier['pareto_frontier'] = True
+        color = palette[model]
+        part = part.sort_values(['occupancy_conflict_rate', 'safe_shiftable_load_opportunity_kwh'], ascending=[True, False])
+        ax.scatter(part['occupancy_conflict_rate'], part['safe_shiftable_load_opportunity_kwh'], s=18, alpha=0.22, color=color, edgecolors='none')
+        frontier = pareto_efficient_frontier(part)
         pareto_rows.append(frontier)
-        plt.plot(frontier['occupancy_conflict_rate'], frontier['safe_shiftable_load_opportunity_kwh'], linewidth=2.2)
+        ax.plot(frontier['occupancy_conflict_rate'], frontier['safe_shiftable_load_opportunity_kwh'], color=color, linewidth=2.2, label=model)
+    marker_by_delta = {0.05: 'o', 0.10: 's', 0.20: 'D'}
+    for _, row in policy_results_df[policy_results_df['risk_delta'].isin(marker_by_delta)].iterrows():
+        model = row['model']
+        if model not in palette:
+            continue
+        ax.scatter(
+            row['occupancy_conflict_rate'],
+            row['safe_shiftable_load_opportunity_kwh'],
+            s=95,
+            marker=marker_by_delta[float(row['risk_delta'])],
+            color=palette[model],
+            edgecolors='black',
+            linewidths=0.8,
+            zorder=5,
+        )
     for delta in cfg.risk_deltas:
-        plt.axvline(delta, color='gray', linestyle='--', linewidth=0.9)
-        plt.text(delta + 0.004, plt.ylim()[1] * 0.95, f'{delta:.0%}', fontsize=8)
-    plt.xlabel('Occupancy conflict rate = false empty recommendations / all recommendations')
-    plt.ylabel('Safe shiftable-load opportunity (kWh)')
-    plt.title('Energy-risk tradeoff threshold sweep with Pareto frontiers')
-    plt.legend(fontsize=7, ncol=2)
-    save_fig(Path(cfg.figure_dir) / 'energy_risk_tradeoff_pareto.png')
+        ax.axvline(delta, color='gray', linestyle='--', linewidth=0.9)
+    ax.set_xlabel('Occupancy conflict rate = false empty recommendations / all recommendations')
+    ax.set_ylabel('Safe shiftable-load opportunity (kWh, offline estimate)')
+    ax.set_title('Risk-opportunity threshold sweep with Pareto-efficient frontiers')
+    model_handles = [Line2D([0], [0], color=color, linewidth=2.2, label=model) for model, color in palette.items()]
+    marker_handles = [
+        Line2D([0], [0], marker=marker, color='black', linestyle='None', markersize=8, label=f'Selected {delta:.0%}')
+        for delta, marker in [(0.05, 'o'), (0.10, 's'), (0.20, 'D')]
+    ]
+    ax.legend(handles=model_handles + marker_handles, title='Solid lines and selected policies', loc='upper left', bbox_to_anchor=(1.02, 1.0), borderaxespad=0, fontsize=8, title_fontsize=9)
+    fig.text(
+        0.02,
+        0.02,
+        'Raw dots = all threshold sweep points. Solid line = Pareto-efficient frontier after filtering dominated points. Large markers = validation-selected thresholds evaluated on held-out test days. Vertical dashed lines = risk constraints.',
+        ha='left',
+        va='bottom',
+        fontsize=8,
+    )
+    fig.subplots_adjust(right=0.74, bottom=0.20)
+    path = Path(cfg.figure_dir) / 'energy_risk_tradeoff_pareto.png'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=180)
+    plt.close(fig)
     pareto_frontier_df = pd.concat(pareto_rows, ignore_index=True) if pareto_rows else pd.DataFrame()
     pareto_frontier_df.to_csv(Path(cfg.result_dir) / 'energy_risk_pareto_frontier.csv', index=False, encoding='utf-8-sig')
     policy_plot = policy_results_df.copy()
