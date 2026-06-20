@@ -1,0 +1,7 @@
+﻿model,minimum_empty_window_length_hours,selected_threshold,test_occupancy_conflict_rate,safe_shiftable_load_opportunity_kwh,recommended_windows,safe_windows,average_window_duration_hours
+Historical Average,1.0,0.95,0.0,94.623047827,12,12,1.375
+Historical Average,2.0,0.95,0.0,0.0,0,0,0.0
+Historical Average,4.0,0.95,0.0,0.0,0,0,0.0
+LightGBM,1.0,0.95,0.0415094339622641,493.9231551775,19,16,3.486842105263158
+LightGBM,2.0,0.95,0.0368852459016393,482.74958427075,15,13,4.066666666666666
+LightGBM,4.0,0.95,0.0148148148148148,313.23122770025,5,4,6.75
