@@ -1,0 +1,3 @@
+﻿chosen_date,model,selected_threshold,number_of_predicted_empty_intervals,number_of_recommended_stable_intervals,safe_intervals,conflict_intervals,conflict_rate,safe_kwh,note
+2019-01-12,LightGBM,0.95,17,17,17,0,0.0,9.778747419750001,Recommendations reconstructed from saved probabilities and validation-selected 10% thresholds; stable windows require >=4 consecutive 15-minute intervals. Interval counts are 15-minute intervals.
+2019-01-12,Historical Average,0.95,9,5,5,0,0.0,3.07796052625,Recommendations reconstructed from saved probabilities and validation-selected 10% thresholds; stable windows require >=4 consecutive 15-minute intervals. Interval counts are 15-minute intervals.

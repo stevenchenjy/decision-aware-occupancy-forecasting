@@ -14,6 +14,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 from matplotlib.ticker import PercentFormatter
 
 
@@ -29,6 +31,8 @@ FIGURES_DIR = REPO_ROOT / "figures"
 STABLE_FIGURE_PATH = FIGURES_DIR / "stable_window_sensitivity_conflict_and_kwh.png"
 TABLE_PATH = RESULTS_DIR / "stable_window_presentation_table.csv"
 EXAMPLE_FIGURE_PATH = FIGURES_DIR / "example_day_lightgbm_recommendation.png"
+SAME_DAY_FIGURE_PATH = FIGURES_DIR / "lightgbm_vs_historical_same_day_recommendation.png"
+SAME_DAY_SUMMARY_PATH = RESULTS_DIR / "lightgbm_vs_historical_same_day_summary.csv"
 CAPTION = (
     "Conflict rate alone measures safety; safe kWh measures captured operational opportunity. "
     "Historical Average is the most conservative policy, while LightGBM captures more usable "
@@ -60,6 +64,31 @@ def _read_csv(path: Path) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(f"Required saved result file is missing: {path}")
     return pd.read_csv(path, encoding="utf-8-sig")
+
+
+def inspect_test_prediction_file() -> pd.DataFrame:
+    """Print the saved prediction schema needed for the same-day comparison."""
+    path = RESULTS_DIR / "forecast_predictions_test_all_models.csv"
+    predictions = _read_csv(path)
+    required = {
+        "date/time": "target_time",
+        "actual occupancy label": "actual_occupied",
+        "LightGBM predicted Empty probability": "lightgbm_empty_probability",
+        "Historical Average predicted Empty probability": "historical_average_empty_probability",
+    }
+    missing = [f"{label} ({column})" for label, column in required.items() if column not in predictions]
+
+    print("Saved test prediction file inspection:")
+    print(f"  path: {path.resolve()}")
+    print(f"  shape: {predictions.shape}")
+    print(f"  columns: {predictions.columns.tolist()}")
+    print("  first 5 rows:")
+    print(predictions.head().to_string(index=False))
+    for label, column in required.items():
+        print(f"  {label} column: {column}")
+    if missing:
+        raise ValueError("Missing required same-day comparison columns: " + ", ".join(missing))
+    return predictions
 
 
 def _display_model_name(value: object) -> str:
@@ -307,10 +336,241 @@ def generate_example_day_figure() -> tuple[Path, dict[str, object]]:
     return EXAMPLE_FIGURE_PATH, metrics
 
 
+def generate_same_day_comparison(predictions: pd.DataFrame) -> tuple[Path, Path, str, str, bool]:
+    """Compare saved LightGBM and Historical Average forecasts on one test day."""
+    selected = _read_csv(RESULTS_DIR / "selected_threshold_policies.csv")
+    selected_10 = selected[np.isclose(pd.to_numeric(selected["risk_delta"]), 0.10)].copy()
+    thresholds = {
+        _display_model_name(row["model"]): float(row["selected_empty_probability_threshold"])
+        for _, row in selected_10.iterrows()
+    }
+    required_thresholds = [model for model in ["LightGBM", "Historical Average"] if model not in thresholds]
+    if required_thresholds:
+        raise ValueError(
+            "Missing validation-selected 10% threshold(s) for: " + ", ".join(required_thresholds)
+        )
+
+    day_predictions = predictions.copy()
+    day_predictions["anchor_time"] = pd.to_datetime(
+        day_predictions["anchor_time"], utc=True
+    ).dt.tz_convert("America/Los_Angeles")
+    day_predictions["target_time"] = pd.to_datetime(
+        day_predictions["target_time"], utc=True
+    ).dt.tz_convert("America/Los_Angeles")
+
+    # A 23:45 anchor's 96 targets cover exactly 00:00--23:45 on one local day.
+    daily_anchors = (
+        day_predictions.loc[
+            (day_predictions["anchor_time"].dt.hour == 23)
+            & (day_predictions["anchor_time"].dt.minute == 45),
+            "anchor_time",
+        ]
+        .drop_duplicates()
+        .sort_values()
+    )
+    lightgbm_threshold = thresholds["LightGBM"]
+    chosen: pd.DataFrame | None = None
+    for anchor in daily_anchors:
+        candidate = day_predictions[day_predictions["anchor_time"] == anchor].sort_values(
+            "horizon_step"
+        )
+        if len(candidate) != 96:
+            continue
+        lightgbm_recommended = stable_empty_mask(
+            candidate["lightgbm_empty_probability"].to_numpy(),
+            lightgbm_threshold,
+            min_steps=4,
+        )[0]
+        if lightgbm_recommended.any():
+            chosen = candidate.copy()
+            break
+    if chosen is None:
+        raise ValueError(
+            "No complete held-out test day has four consecutive LightGBM intervals above "
+            "the validation-selected 10% threshold"
+        )
+
+    selection_rule = (
+        "first complete held-out test day whose LightGBM Empty probability is at or above "
+        "its validation-selected 10% threshold for at least four consecutive 15-minute intervals"
+    )
+    chosen_date = chosen["target_time"].iloc[0].strftime("%Y-%m-%d")
+    actual_occupied = chosen["actual_occupied"].to_numpy(dtype=int) == 1
+
+    load_available = False
+    load_path = RESULTS_DIR / "processed_lbnl_15min_pacific.csv"
+    if load_path.exists():
+        loads = _read_csv(load_path)
+        if {"date_local", "hvac_S", "lig_S"}.issubset(loads.columns):
+            loads = loads.copy()
+            loads["target_time"] = pd.to_datetime(
+                loads["date_local"], utc=True
+            ).dt.tz_convert("America/Los_Angeles")
+            loads["controllable_load_kw"] = (
+                loads["hvac_S"].fillna(0).clip(lower=0)
+                + loads["lig_S"].fillna(0).clip(lower=0)
+            )
+            chosen = chosen.merge(
+                loads[["target_time", "controllable_load_kw"]].drop_duplicates("target_time"),
+                on="target_time",
+                how="left",
+            )
+            load_available = chosen["controllable_load_kw"].notna().all()
+
+    model_specs = [
+        ("LightGBM", "lightgbm_empty_probability", MODEL_COLORS["LightGBM"]),
+        (
+            "Historical Average",
+            "historical_average_empty_probability",
+            MODEL_COLORS["Historical Average"],
+        ),
+    ]
+    model_masks: dict[str, dict[str, np.ndarray]] = {}
+    summary_rows: list[dict[str, object]] = []
+    for model, probability_column, _ in model_specs:
+        probability = chosen[probability_column].to_numpy(dtype=float)
+        predicted_empty = probability >= thresholds[model]
+        recommended = stable_empty_mask(probability, thresholds[model], min_steps=4)[0]
+        safe = recommended & ~actual_occupied
+        conflict = recommended & actual_occupied
+        model_masks[model] = {
+            "predicted_empty": predicted_empty,
+            "recommended": recommended,
+            "safe": safe,
+            "conflict": conflict,
+        }
+        safe_kwh = np.nan
+        if load_available:
+            load_kw = chosen["controllable_load_kw"].to_numpy(dtype=float)
+            safe_kwh = float(load_kw[safe].sum() * 0.25)
+        summary_rows.append(
+            {
+                "chosen_date": chosen_date,
+                "model": model,
+                "selected_threshold": thresholds[model],
+                "number_of_predicted_empty_intervals": int(predicted_empty.sum()),
+                "number_of_recommended_stable_intervals": int(recommended.sum()),
+                "safe_intervals": int(safe.sum()),
+                "conflict_intervals": int(conflict.sum()),
+                "conflict_rate": float(conflict.sum() / recommended.sum())
+                if recommended.any()
+                else 0.0,
+                "safe_kwh": safe_kwh,
+                "note": (
+                    "Recommendations reconstructed from saved probabilities and validation-selected "
+                    "10% thresholds; stable windows require >=4 consecutive 15-minute intervals. "
+                    "Interval counts are 15-minute intervals."
+                ),
+            }
+        )
+
+    times = chosen["target_time"]
+    panel_count = 3 if load_available else 2
+    height_ratios = [1.0, 1.0, 0.7] if load_available else [1.0, 1.0]
+    sns.set_theme(style="whitegrid")
+    fig, axes = plt.subplots(
+        panel_count,
+        1,
+        figsize=(15, 10 if load_available else 7.5),
+        sharex=True,
+        gridspec_kw={"height_ratios": height_ratios},
+    )
+    axes = np.atleast_1d(axes)
+    legend_handles = [
+        Line2D([0], [0], color="black", linewidth=2, label="Predicted Empty probability"),
+        Line2D(
+            [0],
+            [0],
+            color="black",
+            linestyle="--",
+            linewidth=1.3,
+            label="Selected Empty threshold",
+        ),
+        Patch(facecolor="gray", alpha=0.20, label="Actual occupancy"),
+        Patch(facecolor="#54A24B", alpha=0.38, label="Recommended safe empty window"),
+        Patch(facecolor="#E45756", alpha=0.42, label="Recommended conflict window"),
+    ]
+
+    for ax, (model, probability_column, color) in zip(axes[:2], model_specs):
+        masks = model_masks[model]
+        _shade_mask(ax, times, actual_occupied, "gray", "Actual occupancy", 0.20)
+        _shade_mask(
+            ax,
+            times,
+            masks["safe"],
+            "#54A24B",
+            "Recommended safe empty window",
+            0.38,
+        )
+        _shade_mask(
+            ax,
+            times,
+            masks["conflict"],
+            "#E45756",
+            "Recommended conflict window",
+            0.42,
+        )
+        ax.step(
+            times,
+            chosen[probability_column],
+            where="post",
+            color=color,
+            linewidth=2.2,
+            label="Predicted Empty probability",
+        )
+        ax.axhline(
+            thresholds[model],
+            color="black",
+            linestyle="--",
+            linewidth=1.3,
+            label="Selected Empty threshold",
+        )
+        ax.set_ylim(-0.02, 1.05)
+        ax.set_ylabel("Empty probability")
+        ax.set_title(model, loc="left", fontweight="bold")
+        ax.legend(handles=legend_handles, loc="upper right", fontsize=8.5, ncol=2)
+
+    if load_available:
+        load_kw = chosen["controllable_load_kw"].to_numpy(dtype=float)
+        axes[2].step(times, load_kw, where="post", color="#7A5195", linewidth=1.8)
+        axes[2].set_ylabel("HVAC + lighting\nload proxy (kW)")
+        axes[2].set_title("Recorded controllable-load proxy", loc="left", fontweight="bold")
+
+    axes[-1].set_xlabel("Local time (America/Los_Angeles)")
+    axes[-1].xaxis.set_major_formatter(mdates.DateFormatter("%H:%M", tz=times.dt.tz))
+    fig.suptitle(
+        "Same-day comparison: conservative schedule baseline vs opportunity-capturing model",
+        y=0.985,
+    )
+    fig.text(
+        0.5,
+        0.015,
+        (
+            f"Held-out test date: {chosen_date}. Historical Average follows the regular schedule; "
+            "LightGBM identifies additional high-confidence stable empty periods."
+        ),
+        ha="center",
+        va="bottom",
+        fontsize=9.5,
+    )
+    fig.subplots_adjust(left=0.09, right=0.98, top=0.92, bottom=0.10, hspace=0.24)
+    SAME_DAY_FIGURE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(SAME_DAY_FIGURE_PATH, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+    summary = pd.DataFrame(summary_rows)
+    summary.to_csv(SAME_DAY_SUMMARY_PATH, index=False, encoding="utf-8-sig")
+    return SAME_DAY_FIGURE_PATH, SAME_DAY_SUMMARY_PATH, chosen_date, selection_rule, load_available
+
+
 def main() -> int:
+    predictions = inspect_test_prediction_file()
     stable = _read_csv(RESULTS_DIR / "stable_window_metrics.csv")
     figure_path = generate_stable_window_figure(stable)
     table_path, table = generate_presentation_table(stable)
+    same_day_path, same_day_summary_path, chosen_date, selection_rule, load_available = (
+        generate_same_day_comparison(predictions)
+    )
 
     print("\nStable-window presentation table (selected 10% policy):")
     with pd.option_context("display.max_columns", None, "display.width", 180, "display.float_format", "{:,.4f}".format):
@@ -332,6 +592,11 @@ def main() -> int:
     print("\nOutput paths:")
     print(f"  Stable-window figure: {figure_path.resolve()}")
     print(f"  Presentation table: {table_path.resolve()}")
+    print(f"  Same-day comparison figure: {same_day_path.resolve()}")
+    print(f"  Same-day comparison summary: {same_day_summary_path.resolve()}")
+    print(f"  Same-day chosen date: {chosen_date}")
+    print(f"  Same-day selection rule: {selection_rule}")
+    print(f"  HVAC + lighting load proxy available: {load_available}")
     print(f"  Example-day figure ({example_status}): {example_path.resolve()}")
     return 0
 
