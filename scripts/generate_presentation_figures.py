@@ -336,7 +336,11 @@ def generate_example_day_figure() -> tuple[Path, dict[str, object]]:
     return EXAMPLE_FIGURE_PATH, metrics
 
 
-def generate_same_day_comparison(predictions: pd.DataFrame) -> tuple[Path, Path, str, str, bool]:
+def generate_same_day_comparison(
+    predictions: pd.DataFrame,
+    *,
+    write_summary: bool = True,
+) -> tuple[Path, Path, str, str, bool]:
     """Compare saved LightGBM and Historical Average forecasts on one test day."""
     selected = _read_csv(RESULTS_DIR / "selected_threshold_policies.csv")
     selected_10 = selected[np.isclose(pd.to_numeric(selected["risk_delta"]), 0.10)].copy()
@@ -477,7 +481,20 @@ def generate_same_day_comparison(predictions: pd.DataFrame) -> tuple[Path, Path,
     )
     axes = np.atleast_1d(axes)
     legend_handles = [
-        Line2D([0], [0], color="black", linewidth=2, label="Predicted Empty probability"),
+        Line2D(
+            [0],
+            [0],
+            color=MODEL_COLORS["LightGBM"],
+            linewidth=2.2,
+            label="LightGBM predicted Empty probability",
+        ),
+        Line2D(
+            [0],
+            [0],
+            color=MODEL_COLORS["Historical Average"],
+            linewidth=2.2,
+            label="Historical Average predicted Empty probability",
+        ),
         Line2D(
             [0],
             [0],
@@ -488,8 +505,21 @@ def generate_same_day_comparison(predictions: pd.DataFrame) -> tuple[Path, Path,
         ),
         Patch(facecolor="gray", alpha=0.20, label="Actual occupancy"),
         Patch(facecolor="#54A24B", alpha=0.38, label="Recommended safe empty window"),
-        Patch(facecolor="#E45756", alpha=0.42, label="Recommended conflict window"),
     ]
+    if load_available:
+        legend_handles.append(
+            Line2D(
+                [0],
+                [0],
+                color="#7A5195",
+                linewidth=1.8,
+                label="HVAC + lighting load proxy",
+            )
+        )
+    if any(masks["conflict"].any() for masks in model_masks.values()):
+        legend_handles.append(
+            Patch(facecolor="#E45756", alpha=0.42, label="Recommended conflict window")
+        )
 
     for ax, (model, probability_column, color) in zip(axes[:2], model_specs):
         masks = model_masks[model]
@@ -528,7 +558,6 @@ def generate_same_day_comparison(predictions: pd.DataFrame) -> tuple[Path, Path,
         ax.set_ylim(-0.02, 1.05)
         ax.set_ylabel("Empty probability")
         ax.set_title(model, loc="left", fontweight="bold")
-        ax.legend(handles=legend_handles, loc="upper right", fontsize=8.5, ncol=2)
 
     if load_available:
         load_kw = chosen["controllable_load_kw"].to_numpy(dtype=float)
@@ -540,26 +569,36 @@ def generate_same_day_comparison(predictions: pd.DataFrame) -> tuple[Path, Path,
     axes[-1].xaxis.set_major_formatter(mdates.DateFormatter("%H:%M", tz=times.dt.tz))
     fig.suptitle(
         "Same-day comparison: conservative schedule baseline vs opportunity-capturing model",
-        y=0.985,
+        y=0.995,
+    )
+    fig.legend(
+        handles=legend_handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.955),
+        fontsize=9,
+        ncol=3,
+        frameon=True,
     )
     fig.text(
         0.5,
         0.015,
         (
             f"Held-out test date: {chosen_date}. Historical Average follows the regular schedule; "
-            "LightGBM identifies additional high-confidence stable empty periods."
+            "LightGBM identifies additional high-confidence stable empty periods. "
+            "No conflict windows occur on this selected example day."
         ),
         ha="center",
         va="bottom",
         fontsize=9.5,
     )
-    fig.subplots_adjust(left=0.09, right=0.98, top=0.92, bottom=0.10, hspace=0.24)
+    fig.subplots_adjust(left=0.09, right=0.98, top=0.86, bottom=0.10, hspace=0.24)
     SAME_DAY_FIGURE_PATH.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(SAME_DAY_FIGURE_PATH, dpi=200, bbox_inches="tight")
     plt.close(fig)
 
     summary = pd.DataFrame(summary_rows)
-    summary.to_csv(SAME_DAY_SUMMARY_PATH, index=False, encoding="utf-8-sig")
+    if write_summary:
+        summary.to_csv(SAME_DAY_SUMMARY_PATH, index=False, encoding="utf-8-sig")
     return SAME_DAY_FIGURE_PATH, SAME_DAY_SUMMARY_PATH, chosen_date, selection_rule, load_available
 
 
