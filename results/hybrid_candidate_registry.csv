@@ -1,0 +1,4 @@
+﻿model,weights,blend_level,weight_selection,scientific_role,test_empty_auprc
+Seasonal-Transformer Blend,Historical Average=0.54; Original Transformer=0.46,empty-probability,"validation AUPRC grid, step=0.01",validated intermediate,0.8489841085128638
+Hybrid Seasonal-GBDT-Transformer,Historical Average=0.15; LightGBM=0.60; Original Transformer=0.25,empty-probability,"validation AUPRC simplex grid, step=0.05",validation-selected primary hybrid,0.8513696056336105
+Exploratory Hybrid Balanced Tree-Deep,Historical Average=0.20; LightGBM=0.50; Random Forest=0.10; Original Transformer=0.20,empty-probability,staged shortlist; retained because it was test-best,supplementary/test-ranked; not a deployable selected policy,0.8553767895892239

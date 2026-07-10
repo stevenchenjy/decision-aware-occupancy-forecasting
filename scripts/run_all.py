@@ -14,6 +14,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from src.figure_generation import generate_all_figures
+from src.hybrid_analysis import generate_hybrid_artifacts
 from src.lbnl_pipeline import Config, run_pipeline
 
 
@@ -55,6 +56,12 @@ def main() -> int:
     run_pipeline(config=cfg, make_figures=not args.skip_figures, show=args.show_notebook_output)
     if not args.skip_figures:
         generate_all_figures(results_dir=args.results_dir, figures_dir=args.figures_dir)
+    generate_hybrid_artifacts(
+        results_dir=args.results_dir,
+        figures_dir=args.figures_dir,
+        predictions_dir=Path("predictions"),
+        make_figures=not args.skip_figures,
+    )
     print("Pipeline execution completed.")
     return 0
 

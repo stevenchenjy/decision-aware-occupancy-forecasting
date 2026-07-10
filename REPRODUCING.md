@@ -1,19 +1,19 @@
-# Reproducing The Experiment
+# Reproducing the Experiment
 
-This document describes the supported reproducibility path. The executable research logic lives in `src/`, while `LBNL_occupancy_forecasting_main.ipynb` is reporting-only and reads saved outputs.
+There are two supported paths: deterministic hybrid regeneration from committed saved predictions, and full raw-data retraining.
 
-## 1. Python Environment
+## 1. Environment
 
-Use Python 3.10-3.12. Python 3.11 is recommended because it is used by CI.
+Use Python 3.10-3.12; Python 3.11 is the supported CI target.
 
-Conda is the most robust path:
+Conda:
 
 ```bash
 conda env create -f environment.yml
 conda activate decision-aware-occupancy
 ```
 
-Virtualenv path:
+Virtual environment:
 
 ```bash
 python3.11 -m venv .venv
@@ -22,25 +22,60 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-If `python3.11` is not available, use another Python 3.10-3.12 interpreter and confirm with:
+On macOS, LightGBM may require `brew install libomp`.
+
+The staged July environment pins are archived at `archive/new_staging_2026-07/staged_docs/requirements.txt`; they are provenance, not the portable installation file.
+
+## 2. Environment and unit checks
 
 ```bash
-python --version
+python scripts/check_environment.py
+python -m pytest -q
 ```
 
-Python 3.13 is not a supported reproduction target for this repository.
+Tests include hybrid convex-blend calculations, weight-grid behavior, and validation/test split integrity.
 
-On macOS, LightGBM may require OpenMP:
+## 3. Reproduce the hybrid from saved outputs
+
+This path does not train models and does not require raw Dryad data:
 
 ```bash
-brew install libomp
+python scripts/generate_hybrid_artifacts.py
 ```
 
-## 2. Data
+It performs the following in order:
 
-Follow `DATA.md`. The raw LBNL data is not committed to this repository.
+1. Validates the canonical validation prediction schema, 96-step anchors, labels, and probabilities.
+2. Selects Seasonal-Transformer alpha on validation only (0.01 grid).
+3. Selects Historical/LightGBM/Transformer weights on validation only (0.05 simplex grid).
+4. Selects probability thresholds on validation midnight horizons.
+5. Loads test predictions only after blend weights and operating thresholds are fixed.
+6. Applies fixed weights/thresholds to test.
+7. Regenerates comparison tables, risk sweeps, Pareto flags, stable-window results, 2,000 paired daily-block bootstrap summaries, calibration diagnostics, predictions, and figures.
 
-Expected path:
+Key deterministic checks:
+
+- primary weights: `0.15 / 0.60 / 0.25`
+- primary validation AUPRC: `0.72863796`
+- primary test Empty AUPRC: `0.85136961`
+- primary 10% threshold: `0.875`
+- primary test safe opportunity: `490.1464 kWh`
+- primary test conflicts: `0/259`
+
+Use `--skip-figures` for tables/predictions only or `--bootstrap-reps N` for a faster diagnostic run.
+
+## 4. Regenerate all figures from saved results
+
+```bash
+python scripts/generate_figures.py
+python scripts/generate_presentation_figures.py
+```
+
+`generate_figures.py` regenerates the established base figures and the integrated hybrid figures. `generate_presentation_figures.py` retains the earlier LightGBM/Historical presentation artifacts for provenance and comparison.
+
+## 5. Full raw-data retraining
+
+Raw data are not committed. Follow `DATA.md` and place:
 
 ```text
 doi_10_7941_D1N33Q__v20220202/
@@ -54,101 +89,38 @@ doi_10_7941_D1N33Q__v20220202/
       zone_co2.csv
 ```
 
-Run the helper for manual download and placement instructions:
-
-```bash
-python scripts/download_data.py
-```
-
-The helper does not automatically download the Dryad package.
-
-## 3. Environment Check
-
-After activating the environment, run:
-
-```bash
-python scripts/check_environment.py
-```
-
-This checks the Python version, imports the main third-party packages, and imports all local `src` modules.
-
-## 4. Unit Tests
-
-The unit tests use synthetic data and do not require the LBNL dataset.
-
-```bash
-python -m pytest -q
-```
-
-The repository includes `pytest.ini`, so `pytest -q` also works from the repository root when the environment is active.
-
-## 5. Execute The Full Pipeline
-
-Full reproduction requires the raw data directory from Section 2.
+Then run:
 
 ```bash
 python scripts/run_all.py
 ```
 
-The script runs `src.lbnl_pipeline.run_pipeline`, which performs:
+This performs data preparation, base-model training, validation selection, held-out evaluation, prediction export, hybrid selection, uncertainty analysis, and figure generation.
 
-- data preparation
-- feature engineering
-- model training
-- validation threshold selection
-- held-out test evaluation
-- prediction exports
-- energy-opportunity accounting
-- result table generation
-- figure generation
+## 6. Canonical inputs and outputs
 
-Outputs are written under:
+Hybrid inputs:
 
-```text
-results/
-figures/
-predictions/
-```
+- `results/forecast_predictions_validation_all_models.csv`
+- `results/forecast_predictions_test_all_models.csv`
+- `results/processed_lbnl_15min_pacific.csv`
 
-Prediction exports are generated in two formats:
+Primary outputs:
 
-- all-model long-form tables in `results/forecast_predictions_validation_all_models.csv` and `results/forecast_predictions_test_all_models.csv`
-- per-model test prediction CSV files in `predictions/`
+- `results/canonical_model_comparison.csv`
+- `results/canonical_policy_10pct.csv`
+- `results/hybrid_candidate_registry.csv`
+- `results/hybrid_primary_weight_search.csv`
+- `results/hybrid_risk_opportunity_threshold_sweeps.csv`
+- `results/hybrid_uncertainty_daily_block_bootstrap.csv`
+- `predictions/hybrid_ensemble_validation_predictions.csv`
+- `predictions/hybrid_ensemble_test_predictions.csv`
 
-## 6. Regenerate Figures Only
+The root reporting notebook reads saved outputs and is intentionally not the source of executable research logic.
 
-After `results/` exists, regenerate plots without retraining models:
+## 7. Reproducibility limits
 
-```bash
-python scripts/generate_figures.py
-```
-
-This reads saved CSV files from `results/` and writes PNG files to `figures/`. Figure regeneration may take several minutes.
-
-## 7. Reporting Notebook
-
-Open the reporting notebook after running the scripts:
-
-```text
-LBNL_occupancy_forecasting_main.ipynb
-```
-
-The notebook is intentionally reporting-only. It reads saved CSV tables and PNG figures; it is not the source of executable experiment logic.
-
-## 8. Canonical Outputs
-
-Use the canonical outputs below for review:
-
-- Model metrics: `results/model_metrics_empty_positive.csv`
-- Validation-selected thresholds: `results/selected_threshold_policies.csv`
-- Test policy results: `results/threshold_policy_results_test.csv`
-- Pareto frontier: `results/energy_risk_pareto_frontier.csv`
-- Stable-window summary: `results/stable_window_metrics.csv`
-- Detailed continuous-window metrics: `results/continuous_empty_window_policy_results_test.csv`
-- Prediction export: `results/forecast_predictions_test_all_models.csv`
-
-Legacy aliases are preserved in `results/archive/` and `figures/archive/`.
-
-## 9. Notes On Exact Reproduction
-
-The pipeline trains stochastic models with fixed seeds and averages several seeded predictions. Exact bitwise reproducibility may vary across CPU/GPU backends and library versions, especially for PyTorch. The scientific logic should remain stable when the same raw data, splits, code revision, and supported dependency versions are used.
+- The saved-output hybrid is deterministic given the committed CSV inputs and supported libraries.
+- Exact base-model retraining can vary across CPU/GPU, PyTorch, LightGBM, and BLAS versions even with fixed seeds.
+- Full raw-data retraining was not run during the integration because the external Dryad directory is absent.
+- Hybrid-specific per-seed and rolling-origin results require new saved predictions or retraining; they cannot be inferred from aggregate exports.

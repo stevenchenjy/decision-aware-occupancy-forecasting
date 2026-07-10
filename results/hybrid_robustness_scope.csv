@@ -1,0 +1,6 @@
+﻿check,status,primary_hybrid_scope
+multiple_random_seeds,partial/base-components-only,"Base LightGBM/Random Forest/Transformer predictions average seeds 42,43,44; per-seed aligned validation/test predictions were not saved, so hybrid seed dispersion cannot be reconstructed without retraining."
+rolling_origin_validation,not_available_for_hybrid,Saved rolling-origin outputs omit Transformer predictions and cannot reproduce the three-way hybrid; raw-data retraining is required.
+daily_block_bootstrap,implemented,2000 paired resamples of 43 non-overlapping midnight test forecasts; seed=42.
+calibration_reliability,implemented_diagnostic,"Brier, log loss, 10-bin ECE, and reliability curve; no post-hoc recalibration was applied."
+stable_window_sensitivity,implemented,"Minimum durations 0.25, 0.5, 1, 2, and 4 hours at the fixed validation-selected 10% threshold."

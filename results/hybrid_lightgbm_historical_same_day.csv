@@ -1,0 +1,4 @@
+﻿anchor_time,model,selected_threshold,recommended_intervals,safe_intervals,conflict_intervals,safe_opportunity_kwh,recommended_windows,safe_windows,conflict_windows,window_conflict_rate,average_recommended_window_hours,total_recommended_window_hours,average_safe_window_hours
+2019-01-27 00:00:00-08:00,Hybrid Seasonal-GBDT-Transformer,0.875,43,43,0,174.05447278525,1,1,0,0.0,10.75,10.75,10.75
+2019-01-27 00:00:00-08:00,LightGBM,0.95,60,58,2,241.54244807100002,1,0,1,1.0,15.0,15.0,0.0
+2019-01-27 00:00:00-08:00,Historical Average,0.95,6,6,0,26.927128385,1,1,0,0.0,1.5,1.5,1.5

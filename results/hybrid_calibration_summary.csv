@@ -1,0 +1,4 @@
+﻿model,empty_brier,empty_log_loss,quantile_10bin_ece,calibration_method
+Historical Average,0.09735450758750712,0.32374530156243086,0.058332077847620796,diagnostic only; no post-hoc recalibration applied
+LightGBM,0.09560093551604887,0.3058098979534778,0.02621219397643214,diagnostic only; no post-hoc recalibration applied
+Hybrid Seasonal-GBDT-Transformer,0.09277841653008741,0.2984396028273952,0.02533821988744189,diagnostic only; no post-hoc recalibration applied

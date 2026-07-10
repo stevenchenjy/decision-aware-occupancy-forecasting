@@ -1,0 +1,8 @@
+﻿candidate,weights,validation_auprc_empty,test_auprc_empty
+Hybrid Seasonal-GBDT-Transformer,Historical average=0.15; LightGBM=0.60; Transformer=0.25,0.7286379574839047,0.8513696056336104
+Hybrid balanced tree-deep,Historical average=0.20; LightGBM=0.50; Random forest=0.10; Transformer=0.20,0.727256608487209,0.8553767895892238
+LightGBM,LightGBM=1.00,0.7227914986945451,0.8381538987802121
+Hybrid tree-seasonal,Historical average=0.25; LightGBM=0.55; Random forest=0.20,0.7185992772708134,0.8544131346049536
+Seasonal-Transformer blend,Historical average=0.54; Transformer=0.46,0.716773454879707,0.8489841085128639
+Transformer,Transformer=1.00,0.6904108616416209,0.7620963459460515
+Historical average,Historical average=1.00,0.6700951283624541,0.8496651679914844

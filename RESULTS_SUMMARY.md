@@ -1,131 +1,99 @@
 # Results Summary
 
-## Research Question
+## Revised scientific conclusion
 
-Can day-ahead occupancy forecasts identify stable empty windows and estimate safe shiftable-load opportunity while limiting occupancy-conflict risk?
+Building 59 occupancy has strong weekday/time-of-day structure, which explains the competitive Historical Average baseline. A validation-selected probability ensemble combines that train-only seasonal prior with LightGBM's nonlinear tabular signal and the Transformer's temporal sequence signal. Its test Empty AUPRC point estimate is slightly above the schedule baseline, while its validation-selected 10% policy identifies `490.1 kWh` of safe opportunity—within `3.8 kWh` of LightGBM—with zero observed conflicts among 259 recommended intervals in this 43-day test period.
 
-This repository evaluates an offline recommendation framework:
+The model-level advantage over Historical Average and LightGBM is not decisive: paired daily-block AUPRC difference intervals include zero. Likewise, zero observed conflict is not a guarantee of zero future risk.
 
-1. Forecast occupied/empty probability for the next 24 hours.
-2. Select Empty probability thresholds on validation daily schedules.
-3. Recommend stable empty windows on held-out test daily schedules.
-4. Count occupancy conflicts and safe shiftable-load opportunity.
+## Protocol
 
-## Dataset
+- Dataset: LBNL Building 59 selected south-zone streams.
+- Local timezone: `America/Los_Angeles` after UTC interpretation.
+- Frequency: 15 minutes.
+- History/horizon: 96/96 steps (24 hours each).
+- Positive class: Empty=1.
+- Splits: chronological, with 24.25-hour train-validation and validation-test gaps.
+- Model metrics: all overlapping rolling forecast rows.
+- Policy selection/evaluation: 39 validation and 43 test non-overlapping midnight horizons.
+- Stable recommendation: at least four consecutive 15-minute intervals.
+- Default opportunity: recorded `hvac_S + lig_S`, multiplied by 0.25 hour, counted only when recommended and actually empty.
 
-- Dataset: LBNL Building 59 Office Building Dataset, Dryad DOI `10.7941/D1N33Q`.
-- Scope: selected south-zone streams from Building 59.
-- Frequency: 15-minute intervals.
-- Local timezone: `America/Los_Angeles`.
-- Test target period: 2019-01-09 to 2019-02-21 local Pacific time.
-- Test daily schedules: 43 non-overlapping daily forecast horizons.
-- Empty is the positive class for recommendation metrics.
+## Model-level test comparison
 
-## Method Notes
+| Model | Role | Empty AUPRC | Empty precision | Empty recall | Empty F1 |
+|---|---|---:|---:|---:|---:|
+| Historical Average | schedule baseline | 0.8497 | 0.7264 | 0.8015 | 0.7621 |
+| LightGBM | reference | 0.8382 | 0.7610 | 0.7593 | 0.7601 |
+| Random Forest | original | 0.8329 | 0.7510 | 0.8019 | 0.7756 |
+| Original Transformer | original | 0.7621 | 0.7253 | 0.6022 | 0.6581 |
+| DLinear | original | 0.5933 | 0.5764 | 0.6657 | 0.6179 |
+| Seasonal-Transformer Blend | validation-selected intermediate | 0.8490 | 0.7465 | 0.7408 | 0.7436 |
+| Hybrid Seasonal-GBDT-Transformer | validation-selected primary | 0.8514 | 0.7677 | 0.7556 | 0.7616 |
+| Exploratory Hybrid Balanced Tree-Deep | test-ranked supplementary | 0.8554 | 0.7659 | 0.7649 | 0.7654 |
 
-- Raw timestamps are treated as UTC and converted to `America/Los_Angeles` before generating hour, day-of-week, weekend, month, and holiday features.
-- Raw occupancy uses `occupied=1`; recommendation evaluation flips the positive class to `Empty=1`.
-- The pipeline uses chronological train/validation/test splits with 24.25-hour gaps.
-- Historical Average uses training labels only.
-- Rolling occupancy features use `arr[anchor-window:anchor]`, excluding current and future labels.
-- Missing values use causal forward-fill plus fixed 0.0 for leading gaps.
-- Future sensor values and load variables are excluded from model inputs.
+Source: `results/canonical_model_comparison.csv`.
 
-## Models Evaluated
+## Validation-selected 10% policies
 
-- Historical Average
-- LightGBM
-- Random Forest
-- Transformer
-- DLinear
+| Model | Threshold | Validation conflict | Test conflict | Safe kWh | Recommended/safe/conflict intervals | Recommended/safe windows | Coverage | kWh/day |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Historical Average | 0.950 | 8.33% | 0.00% | 94.6 | 66 / 66 / 0 | 12 / 12 | 1.60% | 2.20 |
+| LightGBM | 0.950 | 9.61% | 4.15% | 493.9 | 265 / 254 / 11 | 19 / 16 | 6.42% | 11.49 |
+| Random Forest | 0.925 | 4.20% | 5.32% | 359.5 | 188 / 178 / 10 | 10 / 7 | 4.55% | 8.36 |
+| Original Transformer | 0.900 | 2.20% | 9.68% | 97.4 | 31 / 28 / 3 | 2 / 1 | 0.75% | 2.27 |
+| DLinear | 0.875 | 7.55% | 43.87% | 185.1 | 155 / 87 / 68 | 7 / 3 | 3.75% | 4.30 |
+| Seasonal-Transformer Blend | 0.800 | 8.53% | 0.00% | 457.9 | 249 / 249 / 0 | 14 / 14 | 6.03% | 10.65 |
+| Hybrid Seasonal-GBDT-Transformer | 0.875 | 8.75% | 0.00% | 490.1 | 259 / 259 / 0 | 14 / 14 | 6.27% | 11.40 |
+| Exploratory Hybrid Balanced Tree-Deep | 0.875 | 8.14% | 0.00% | 446.5 | 256 / 256 / 0 | 14 / 14 | 6.20% | 10.38 |
 
-TFT and PatchTST are not part of the main experiment because a fair comparison would require matched feature inputs, splits, seeds, and tuning budget.
+The balanced model's threshold was selected on validation, but its model architecture remains test-ranked; this row is diagnostic/supplementary rather than a selected deployment recommendation.
 
-## Main Finding
+Source: `results/canonical_policy_10pct.csv`.
 
-Historical Average has the highest model-level Empty AUPRC, showing that periodic occupancy structure is strong. Under the 10% validation-selected recommendation policy, LightGBM provides the strongest practical risk-opportunity tradeoff in the current experiment.
+## Primary-hybrid differences
 
-The recommendation objective is:
+| Comparator | Empty AUPRC difference | Relative AUPRC difference | Safe-kWh difference | Relative safe-kWh difference | Test conflict-rate difference | Coverage difference |
+|---|---:|---:|---:|---:|---:|---:|
+| Original Transformer | +0.0893 | +11.71% | +392.7 kWh | +403.03% | -9.68 percentage points | +5.52 percentage points |
+| Historical Average | +0.0017 | +0.20% | +395.5 kWh | +418.00% | 0.00 percentage points | +4.68 percentage points |
+| LightGBM | +0.0132 | +1.58% | -3.8 kWh | -0.76% | -4.15 percentage points | -0.15 percentage points |
+| Seasonal-Transformer Blend | +0.0024 | +0.28% | +32.3 kWh | +7.04% | 0.00 percentage points | +0.24 percentage points |
 
-`maximize safe shiftable-load opportunity subject to occupancy conflict rate <= delta`
+Differences are arithmetic point-estimate comparisons, not proof of superiority.
 
-with validation-selected delta values of 5%, 10%, and 20%.
+## Uncertainty
 
-## 10% Policy Results
+Two thousand paired bootstrap resamples use the 43 non-overlapping midnight test horizons and keep the validation-selected thresholds fixed.
 
-The 10% policy selects each model's Empty probability threshold on validation daily schedules by maximizing safe shiftable-load opportunity subject to validation occupancy-conflict rate `<= 10%`. The selected threshold is then evaluated once on held-out test daily schedules.
+| Quantity | Point estimate | 95% daily-block bootstrap interval |
+|---|---:|---:|
+| Primary hybrid daily-horizon Empty AUPRC | 0.8522 | [0.7918, 0.9016] |
+| Primary hybrid safe opportunity | 490.1 kWh | [153.1, 966.7] |
+| Primary minus LightGBM daily-horizon Empty AUPRC | +0.0163 | [-0.0050, +0.0426] |
+| Primary minus Historical Average daily-horizon Empty AUPRC | +0.0042 | [-0.0304, +0.0377] |
+| Primary minus LightGBM safe opportunity | -3.8 kWh | [-208.2, +174.6] |
+| Primary minus Historical Average safe opportunity | +395.5 kWh | [+127.0, +786.2] |
 
-| Model | Selected Empty threshold | Test occupancy-conflict rate | Safe shiftable-load opportunity | Recommended intervals | Safe intervals |
-|---|---:|---:|---:|---:|---:|
-| Historical Average | 0.950 | 0.00% | 94.6 kWh | 66 | 66 |
-| LightGBM | 0.950 | 4.15% | 493.9 kWh | 265 | 254 |
-| Random Forest | 0.925 | 5.32% | 359.5 kWh | 188 | 178 |
-| Transformer | 0.900 | 9.68% | 97.4 kWh | 31 | 28 |
-| DLinear | 0.875 | 43.87% | 185.1 kWh | 155 | 87 |
+The all-overlap headline AUPRC (`0.8514`) and daily-horizon bootstrap point (`0.8522`) use different row scopes. The latter avoids summing overlapping daily forecasts and is used for uncertainty.
 
-Source table: `results/threshold_policy_results_test.csv`.
+All observed primary-hybrid conflict blocks are zero, so a nonparametric bootstrap cannot create unseen conflicts and returns `[0,0]`. A one-sided independent-trial 95% upper bound is approximately 1.15% for 259 intervals and 19.3% for 14 windows; interval/window independence is not established. These are cautionary bounds, not guarantees.
 
-## LightGBM 10% Headline Result
+Source: `results/hybrid_uncertainty_daily_block_bootstrap.csv` and `results/primary_hybrid_zero_conflict_bound.csv`.
 
-LightGBM, 10% validation-selected occupancy-conflict policy:
+## Calibration and robustness
 
-- Selected Empty probability threshold: 0.95.
-- Test occupancy-conflict rate: 4.15%.
-- Safe shiftable-load opportunity: 493.9 kWh.
-- Gross recommended controllable opportunity: 537.9 kWh.
-- Conflict controllable kWh excluded: 44.0 kWh.
-- Recommended stable windows: 19.
-- Safe stable windows: 16.
-- Safe opportunity per day: 11.49 kWh/day.
+- Primary hybrid Brier: `0.0928`; log loss: `0.2984`; 10-bin diagnostic ECE: `0.0253`.
+- No post-hoc probability recalibration was applied.
+- Stable-window sensitivity is available from 0.25 to 4 hours.
+- Base components average seeds 42, 43, and 44.
+- Hybrid-specific seed dispersion is unavailable because aligned per-seed component predictions were not saved.
+- Hybrid rolling-origin validation is unavailable because saved folds omit Transformer predictions.
 
-The default controllable-load proxy is:
+See `results/hybrid_calibration_summary.csv`, `results/hybrid_stable_window_sensitivity.csv`, and `results/hybrid_robustness_scope.csv`.
 
-`P_controllable = hvac_S + lig_S`
+## Canonical interpretation
 
-For each safe recommended 15-minute interval:
+Supported: the hybrid identifies recorded periods where shiftable load coincides with predicted and realized emptiness under an offline validation-selected policy.
 
-`kWh = P_controllable * 0.25`
-
-## Forecasting Metrics
-
-Model-level test metrics use Empty as the positive class. These metrics are computed over overlapping rolling forecast intervals, so effective sample size is smaller than the raw interval count.
-
-| Model | Empty AUPRC | Empty AUROC | Empty F1 | Empty precision | Empty recall |
-|---|---:|---:|---:|---:|---:|
-| Historical Average | 0.8497 | 0.9262 | 0.7621 | 0.7264 | 0.8015 |
-| LightGBM | 0.8382 | 0.9291 | 0.7601 | 0.7610 | 0.7593 |
-| Random Forest | 0.8329 | 0.9307 | 0.7756 | 0.7510 | 0.8019 |
-| Transformer | 0.7621 | 0.9034 | 0.6581 | 0.7253 | 0.6022 |
-| DLinear | 0.5933 | 0.7944 | 0.6179 | 0.5764 | 0.6657 |
-
-Source table: `results/model_metrics_empty_positive.csv`.
-
-## Important Interpretation
-
-This is an offline opportunity estimate.
-
-This is not verified energy savings.
-
-The repository does not include a counterfactual building simulation, BMS intervention, thermal-comfort model, occupant-response study, or real deployment evaluation. The energy numbers should be interpreted as safe shiftable-load opportunity under the recorded test period and recorded load streams.
-
-## Canonical Result Files
-
-- Model metrics: `results/model_metrics_empty_positive.csv`
-- Validation-selected policies: `results/selected_threshold_policies.csv`
-- Test policy results: `results/threshold_policy_results_test.csv`
-- Threshold sweep and Pareto input: `results/energy_risk_tradeoff_threshold_sweep.csv`
-- Pareto frontier output: `results/energy_risk_pareto_frontier.csv`
-- Stable-window summary: `results/stable_window_metrics.csv`
-- Detailed continuous-window metrics: `results/continuous_empty_window_policy_results_test.csv`
-- Energy sensitivity: `results/energy_sensitivity_analysis.csv`
-- Prediction export: `results/forecast_predictions_test_all_models.csv`
-
-Legacy duplicate or alias outputs are preserved under `results/archive/`.
-
-## First Figures To Inspect
-
-- `figures/energy_risk_tradeoff_pareto.png` - threshold sweep showing risk versus safe opportunity.
-- `figures/threshold_policy_safe_opportunity.png` - safe opportunity under validation-selected risk constraints.
-- `figures/threshold_policy_occupancy_conflict.png` - held-out test conflict rate under selected policies.
-- `figures/stable_window_sensitivity.png` - sensitivity to minimum empty-window duration.
-- `figures/model_metrics_empty_positive.png` - Empty-positive model metrics.
+Not supported: verified savings, causal energy reduction, comfort preservation, generalization beyond this building/period, or guaranteed zero-conflict operation.

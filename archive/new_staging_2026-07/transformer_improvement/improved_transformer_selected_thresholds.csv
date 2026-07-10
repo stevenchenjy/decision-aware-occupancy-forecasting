@@ -1,0 +1,22 @@
+﻿model,risk_delta,selected_empty_probability_threshold,validation_occupancy_conflict_rate,validation_safe_shiftable_load_opportunity_kwh,selection_met_constraint,selection_note
+Transformer,0.05,0.9,0.02197802197802198,49.68679439649999,True,max safe opportunity subject to occupancy conflict <= 5% on validation
+Transformer,0.1,0.9,0.02197802197802198,49.68679439649999,True,max safe opportunity subject to occupancy conflict <= 10% on validation
+Transformer,0.2,0.85,0.1992619926199262,220.742866827,True,max safe opportunity subject to occupancy conflict <= 20% on validation
+Historical average,0.05,0.95,0.08333333333333333,88.336627204,False,no validation threshold met occupancy conflict <= 5%; lowest-conflict fallback
+Historical average,0.1,0.95,0.08333333333333333,88.336627204,True,max safe opportunity subject to occupancy conflict <= 10% on validation
+Historical average,0.2,0.725,0.19141914191419143,852.0040963915001,True,max safe opportunity subject to occupancy conflict <= 20% on validation
+LightGBM,0.05,0.95,0.0960960960960961,502.97002675824996,False,no validation threshold met occupancy conflict <= 5%; lowest-conflict fallback
+LightGBM,0.1,0.95,0.0960960960960961,502.97002675824996,True,max safe opportunity subject to occupancy conflict <= 10% on validation
+LightGBM,0.2,0.875,0.16605166051660517,752.6206787624999,True,max safe opportunity subject to occupancy conflict <= 20% on validation
+Seasonal-Transformer blend,0.05,0.925,0.0,15.026240969499998,True,max safe opportunity subject to occupancy conflict <= 5% on validation
+Seasonal-Transformer blend,0.1,0.8,0.08527131782945736,341.07715149825003,True,max safe opportunity subject to occupancy conflict <= 10% on validation
+Seasonal-Transformer blend,0.2,0.725,0.1593625498007968,609.7498815105,True,max safe opportunity subject to occupancy conflict <= 20% on validation
+Hybrid Seasonal-GBDT-Transformer,0.05,0.95,0.0,50.42090785049999,True,max safe opportunity subject to occupancy conflict <= 5% on validation
+Hybrid Seasonal-GBDT-Transformer,0.1,0.875,0.08745247148288973,368.483983239,True,max safe opportunity subject to occupancy conflict <= 10% on validation
+Hybrid Seasonal-GBDT-Transformer,0.2,0.775,0.1842948717948718,851.5829167845,True,max safe opportunity subject to occupancy conflict <= 20% on validation
+Hybrid balanced tree-deep,0.05,0.95,0.0,30.938831265499996,True,max safe opportunity subject to occupancy conflict <= 5% on validation
+Hybrid balanced tree-deep,0.1,0.875,0.08139534883720931,366.639330246,True,max safe opportunity subject to occupancy conflict <= 10% on validation
+Hybrid balanced tree-deep,0.2,0.775,0.178752107925801,816.98323111075,True,max safe opportunity subject to occupancy conflict <= 20% on validation
+Hybrid tree-seasonal,0.05,0.95,0.09090909090909091,185.85446326699997,False,no validation threshold met occupancy conflict <= 5%; lowest-conflict fallback
+Hybrid tree-seasonal,0.1,0.95,0.09090909090909091,185.85446326699997,True,max safe opportunity subject to occupancy conflict <= 10% on validation
+Hybrid tree-seasonal,0.2,0.8,0.17993079584775087,832.26676256525,True,max safe opportunity subject to occupancy conflict <= 20% on validation

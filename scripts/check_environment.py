@@ -30,6 +30,7 @@ LOCAL_MODULES = [
     "src.evaluation",
     "src.feature_engineering",
     "src.figure_generation",
+    "src.hybrid_analysis",
     "src.lbnl_pipeline",
     "src.models",
     "src.plotting",

@@ -1,0 +1,11 @@
+﻿check,status,detail
+validation_test_target_separation,pass,validation max=2019-01-06 23:45:00-08:00; test min=2019-01-09 00:00:00-08:00
+complete_24h_horizons,pass,validation/test groups each contain 96 ordered 15-minute steps
+label_consistency,pass,actual_empty_positive equals 1 - actual_occupied and repeated target labels agree
+test_load_alignment,pass,mapped 388032 prediction rows to HVAC+lighting interval kWh; missing filled after <=1% gate=0
+per_model_export_alignment:Historical Average,pass,keys/labels match=True; max probability difference=0
+per_model_export_alignment:LightGBM,pass,keys/labels match=True; max probability difference=0
+per_model_export_alignment:Random Forest,pass,keys/labels match=True; max probability difference=4.16e-16
+per_model_export_alignment:Original Transformer,pass,keys/labels match=True; max probability difference=0
+per_model_export_alignment:DLinear,pass,keys/labels match=True; max probability difference=0
+staged_hybrid_probability_reproduction,pass,keys/labels match=True; maximum probability difference=1.11e-16

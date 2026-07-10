@@ -1,0 +1,19 @@
+﻿estimate_type,model_or_contrast,metric,point_estimate,bootstrap_mean,ci95_low,ci95_high,daily_blocks,bootstrap_reps,random_seed,scope
+model,Hybrid Seasonal-GBDT-Transformer,empty_auprc,0.852211936160553,0.8523903899818849,0.7918268269340509,0.9016261918082747,43,2000,42,non-overlapping midnight test forecasts; fixed validation-selected thresholds
+model,Hybrid Seasonal-GBDT-Transformer,occupancy_conflict_rate,0.0,0.0,0.0,0.0,43,2000,42,non-overlapping midnight test forecasts; fixed validation-selected thresholds
+model,Hybrid Seasonal-GBDT-Transformer,safe_opportunity_kwh,490.1463795264999,489.75550474358806,153.05469133925624,966.6891604472,43,2000,42,non-overlapping midnight test forecasts; fixed validation-selected thresholds
+model,LightGBM,empty_auprc,0.835935988783293,0.8367898118252893,0.7626172868613945,0.8936729495255744,43,2000,42,non-overlapping midnight test forecasts; fixed validation-selected thresholds
+model,LightGBM,occupancy_conflict_rate,0.04150943396226415,0.04239473490308966,0.0,0.11501444723618083,43,2000,42,non-overlapping midnight test forecasts; fixed validation-selected thresholds
+model,LightGBM,safe_opportunity_kwh,493.9231551775,495.6152557614327,130.1107998372875,1085.2617658977497,43,2000,42,non-overlapping midnight test forecasts; fixed validation-selected thresholds
+model,Historical Average,empty_auprc,0.848051667190102,0.8473159543903721,0.7925174662853981,0.8916255556450234,43,2000,42,non-overlapping midnight test forecasts; fixed validation-selected thresholds
+model,Historical Average,occupancy_conflict_rate,0.0,0.0,0.0,0.0,43,2000,42,non-overlapping midnight test forecasts; fixed validation-selected thresholds
+model,Historical Average,safe_opportunity_kwh,94.623047827,94.5811889929645,20.780340394425,191.88467605326863,43,2000,42,non-overlapping midnight test forecasts; fixed validation-selected thresholds
+model,Original Transformer,empty_auprc,0.7539121354959216,0.7552067240446454,0.6749012706993426,0.8272361186002314,43,2000,42,non-overlapping midnight test forecasts; fixed validation-selected thresholds
+model,Original Transformer,occupancy_conflict_rate,0.0967741935483871,0.07610425543124764,0.0,0.15789473684210525,43,2000,42,non-overlapping midnight test forecasts; fixed validation-selected thresholds
+model,Original Transformer,safe_opportunity_kwh,97.43921710375,96.49243274192374,0.0,267.27216227649996,43,2000,42,non-overlapping midnight test forecasts; fixed validation-selected thresholds
+paired_difference,Primary minus LightGBM,empty_auprc,0.016275947377260014,0.015600578156595494,-0.005020175773487642,0.04263803444166638,43,2000,42,paired non-overlapping midnight test forecasts; fixed validation-selected thresholds
+paired_difference,Primary minus LightGBM,occupancy_conflict_rate,-0.04150943396226415,-0.04239473490308966,-0.11501444723618091,0.0,43,2000,42,paired non-overlapping midnight test forecasts; fixed validation-selected thresholds
+paired_difference,Primary minus LightGBM,safe_opportunity_kwh,-3.7767756510000936,-5.859751017844771,-208.18082707885003,174.60525122284358,43,2000,42,paired non-overlapping midnight test forecasts; fixed validation-selected thresholds
+paired_difference,Primary minus Historical Average,empty_auprc,0.004160268970450964,0.005074435591512801,-0.03041152627987078,0.037653718957843835,43,2000,42,paired non-overlapping midnight test forecasts; fixed validation-selected thresholds
+paired_difference,Primary minus Historical Average,occupancy_conflict_rate,0.0,0.0,0.0,0.0,43,2000,42,paired non-overlapping midnight test forecasts; fixed validation-selected thresholds
+paired_difference,Primary minus Historical Average,safe_opportunity_kwh,395.5233316994999,395.17431575062346,126.999961478525,786.1754824898185,43,2000,42,paired non-overlapping midnight test forecasts; fixed validation-selected thresholds

@@ -1,0 +1,25 @@
+﻿model,risk_delta,selected_threshold,validation_conflict_rate,validation_safe_opportunity_kwh,selection_met_constraint,selection_note,selection_split
+Historical Average,0.05,0.95,0.08333333333333333,88.336627204,False,fallback: minimum validation conflict; constraint not met,validation_midnight_daily_forecasts
+Historical Average,0.1,0.95,0.08333333333333333,88.336627204,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Historical Average,0.2,0.725,0.19141914191419143,852.0040963915001,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+LightGBM,0.05,0.95,0.0960960960960961,502.97002675824996,False,fallback: minimum validation conflict; constraint not met,validation_midnight_daily_forecasts
+LightGBM,0.1,0.95,0.0960960960960961,502.97002675824996,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+LightGBM,0.2,0.875,0.16605166051660517,752.6206787624999,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Random Forest,0.05,0.925,0.04201680672268908,184.36885679099998,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Random Forest,0.1,0.925,0.04201680672268908,184.36885679099998,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Random Forest,0.2,0.85,0.17220543806646527,486.85648003925,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Original Transformer,0.05,0.9,0.02197802197802198,49.68679439649999,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Original Transformer,0.1,0.9,0.02197802197802198,49.68679439649999,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Original Transformer,0.2,0.85,0.1992619926199262,220.742866827,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+DLinear,0.05,0.925,0.0,26.5857578895,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+DLinear,0.1,0.875,0.07547169811320754,58.160221588249996,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+DLinear,0.2,0.8,0.19806763285024154,88.205670294,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Seasonal-Transformer Blend,0.05,0.925,0.0,15.026240969499998,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Seasonal-Transformer Blend,0.1,0.8,0.08527131782945736,341.07715149825003,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Seasonal-Transformer Blend,0.2,0.725,0.1593625498007968,609.7498815105,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Hybrid Seasonal-GBDT-Transformer,0.05,0.95,0.0,50.42090785049999,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Hybrid Seasonal-GBDT-Transformer,0.1,0.875,0.08745247148288973,368.483983239,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Hybrid Seasonal-GBDT-Transformer,0.2,0.775,0.1842948717948718,851.5829167845,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Exploratory Hybrid Balanced Tree-Deep,0.05,0.95,0.0,30.938831265499996,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Exploratory Hybrid Balanced Tree-Deep,0.1,0.875,0.08139534883720931,366.639330246,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts
+Exploratory Hybrid Balanced Tree-Deep,0.2,0.775,0.178752107925801,816.98323111075,True,maximum validation safe opportunity subject to conflict constraint,validation_midnight_daily_forecasts

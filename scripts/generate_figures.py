@@ -14,6 +14,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from src.figure_generation import generate_all_figures
+from src.hybrid_analysis import generate_hybrid_artifacts
 
 
 def parse_args() -> argparse.Namespace:
@@ -27,7 +28,17 @@ def main() -> int:
     args = parse_args()
     os.chdir(REPO_ROOT)
     paths = generate_all_figures(results_dir=args.results_dir, figures_dir=args.figures_dir)
-    print(f"Regenerated {len(paths)} figure files in {args.figures_dir.resolve()}.")
+    hybrid_paths = generate_hybrid_artifacts(
+        results_dir=args.results_dir,
+        figures_dir=args.figures_dir,
+        predictions_dir=Path("predictions"),
+        make_figures=True,
+    )
+    generated_figures = [path for path in hybrid_paths if Path(path).suffix.lower() == ".png"]
+    print(
+        f"Regenerated {len(paths) + len(generated_figures)} figure files "
+        f"in {args.figures_dir.resolve()}."
+    )
     return 0
 
 

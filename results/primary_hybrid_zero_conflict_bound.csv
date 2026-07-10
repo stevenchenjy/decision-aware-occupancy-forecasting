@@ -1,0 +1,3 @@
+﻿unit,sample_size,observed_conflicts,observed_conflict_rate,one_sided_95_upper_if_independent,caution
+recommended_15min_interval,259,0,0.0,0.011499898681967657,Intervals are clustered within days/windows; independence is not established.
+recommended_window,14,0,0.0,0.19263617565013536,Only this held-out period was observed; this is not a universal safety guarantee.

@@ -1,16 +1,18 @@
 # Future Work
 
-Priority-ranked improvements for a stronger paper or later research phase. These are not required for the current professor-review package.
+The scriptable pipeline, hybrid integration, daily-block uncertainty, calibration diagnostics, and presentation figures are now implemented. Remaining priorities are:
 
-| Priority | Improvement | Effort | Benefit | Research Impact |
-|---:|---|---|---|---|
-| 1 | Move notebook logic into scriptable pipeline modules | Medium | Makes runs testable and reviewable | High |
-| 2 | Add a true decision-aware training objective | Medium-High | Aligns model training with recommendation risk/opportunity | Very High |
-| 3 | Add daily-block confidence intervals to all headline metrics | Low-Medium | Reduces overconfidence from overlapping intervals | High |
-| 4 | Add stronger baselines | Medium | Clarifies whether LightGBM is genuinely strong | High |
-| 5 | Add calibrated uncertainty or conformal risk control | Medium | Gives more defensible risk constraints | Very High |
-| 6 | Add multi-zone or multi-building evaluation | Medium-High | Tests generalization beyond one selected area | Very High |
-| 7 | Add EnergyPlus, Sinergym, or another counterfactual energy evaluation | High | Separates opportunity from actual savings | Very High |
-| 8 | Add deployment API and monitoring design | Medium | Makes production assumptions explicit | Medium |
-| 9 | Add model serialization and versioned artifacts | Medium | Enables repeatable inference and retraining | Medium |
-| 10 | Add paper-ready figure generation scripts | Low-Medium | Improves manuscript reproducibility | Medium |
+| Priority | Improvement | Missing requirement | Benefit |
+|---:|---|---|---|
+| 1 | Hybrid multiple-seed robustness | Save aligned validation/test component predictions for every seed, then blend within seed | Separates ensemble gain from seed luck |
+| 2 | Hybrid rolling-origin validation | Retrain Transformer and tabular components on matched rolling folds | Tests temporal stability of the complete primary model |
+| 3 | Nested or pre-registered ensemble selection | Define architecture and weight grid before final test access; ideally use nested temporal validation | Removes residual researcher-degrees-of-freedom concern |
+| 4 | Calibrated/conformal risk control | Fit calibration or conformal method on validation only | Gives more defensible finite-sample risk statements |
+| 5 | Longer and cross-building evaluation | Additional zones, buildings, seasons, and years | Tests external validity and rare conflicts |
+| 6 | Counterfactual energy evaluation | EnergyPlus/Sinergym model or intervention data | Converts opportunity into defensible savings estimates |
+| 7 | Comfort and occupant-response constraints | Setpoint response, PMV/PPD, feedback, and control limits | Evaluates operational acceptability |
+| 8 | True decision-aware training | Predeclared false-empty/missed-opportunity loss and matched tuning budget | Aligns model training with the policy objective |
+| 9 | Model serialization and inference contract | Versioned weights, feature schema, environment, and monitoring plan | Supports repeatable deployment research |
+| 10 | Test-set quarantine workflow | Immutable test artifact and automated selection audit | Prevents accidental test-guided iteration |
+
+The immediate professor-facing next step should be hybrid rolling-origin and per-seed evidence, not further test-set candidate search.

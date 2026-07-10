@@ -1,146 +1,103 @@
 # Decision-Aware Occupancy Forecasting Research Prototype
 
-This repository evaluates day-ahead occupancy forecasting for identifying stable empty windows and estimating safe shiftable-load opportunity under occupancy-conflict constraints.
+This repository evaluates day-ahead occupancy forecasts for identifying stable empty windows and estimating offline safe shiftable-load opportunity under occupancy-conflict constraints.
 
-The current implementation is best described as:
+The strongest current conclusion concerns a validation-selected probability hybrid:
 
-`occupancy forecasting + validation-selected risk-constrained recommendation evaluation`
+`seasonal schedule prior + LightGBM + Transformer -> validation-selected risk policy`
 
-It does not implement a deployed controller, verified energy-savings study, reinforcement-learning scheduler, or learned decision-aware loss.
+It is an offline evaluation framework, not a deployed controller or verified energy-savings study.
 
-## Quick Start For Review
+## Main result
 
-For a fast first pass, read:
+The primary `Hybrid Seasonal-GBDT-Transformer` combines:
 
-1. `RESULTS_SUMMARY.md` - main numbers, method notes, and canonical result files.
-2. `VALIDITY_CHECKLIST.md` - leakage-prevention and evaluation checks.
-3. `CLAIMS_AND_LIMITATIONS.md` - supported claims, unsupported claims, and wording boundaries.
-4. `REPRODUCING.md` - full rerun instructions.
+- 15% train-only Historical Average Empty probability
+- 60% LightGBM Empty probability
+- 25% original Transformer Empty probability
 
-## What The Project Does
+Those weights are the highest-validation-AUPRC point on a declared 0.05 simplex grid. The 10% policy threshold (`0.875`) is then selected on validation midnight forecasts by maximizing safe opportunity subject to validation occupancy conflict `<=10%`.
 
-- Builds 15-minute occupancy labels from LBNL Building 59 selected south-zone occupancy streams.
-- Aligns occupancy, WiFi, weather, interior temperature, and electrical meter streams.
-- Trains and evaluates Historical Average, LightGBM, Random Forest, DLinear, and Transformer baselines.
-- Converts forecasts into stable empty-window recommendations.
-- Selects Empty probability thresholds on validation daily schedules and evaluates them on held-out test daily schedules.
-- Reports occupancy-conflict risk and offline safe shiftable-load opportunity.
+On 43 held-out test days:
 
-## Main Reported Result
+- Empty AUPRC: `0.8514`
+- test conflict rate: `0/259 = 0.00%` observed recommended intervals
+- safe opportunity: `490.1 kWh`
+- recommendation coverage: `6.27%`
+- recommended/safe windows: `14/14`
+- safe opportunity per day: `11.40 kWh/day`
 
-Under the 10% validation-selected occupancy-conflict policy, LightGBM selected an Empty probability threshold of 0.95.
+The point AUPRC is slightly above Historical Average (`0.8497`) and LightGBM (`0.8382`), but paired daily-block confidence intervals for those differences include zero. The observed 0% conflict is specific to this test period and is not a universal safety guarantee.
 
-On the held-out test daily schedules:
+## Model roles
 
-- Test occupancy-conflict rate: 4.15%.
-- Safe shiftable-load opportunity: 493.9 kWh.
-- Recommended stable windows: 19.
-- Safe stable windows: 16.
-- Test target period: 2019-01-09 to 2019-02-21 local Pacific time.
+| Family | Role |
+|---|---|
+| Historical Average | Train-only weekday/time-slot schedule baseline; defines the seasonal prior |
+| LightGBM | Nonlinear tabular reference and strongest established opportunity policy |
+| Random Forest, original Transformer, DLinear | Original comparison models |
+| Seasonal-Transformer Blend | Validation-selected two-way intermediate (`0.54/0.46`) |
+| Hybrid Seasonal-GBDT-Transformer | Validation-selected primary hybrid (`0.15/0.60/0.25`) |
+| Exploratory Hybrid Balanced Tree-Deep | Test-ranked supplementary candidate (`0.8554` test AUPRC); not a selected deployment policy |
 
-Historical Average has the highest model-level Empty AUPRC, showing strong periodic occupancy structure. LightGBM gives the strongest practical risk-opportunity tradeoff under the 10% recommendation policy in this experiment.
+## Start here
 
-## Important Interpretation
+1. `RESULTS_SUMMARY.md` — canonical results, differences, and uncertainty.
+2. `reports/new_artifact_integration_audit.md` — provenance and experimental-validity audit.
+3. `reports/new_artifact_integration_report.md` — integration changes and presentation paths.
+4. `VALIDITY_CHECKLIST.md` — leakage and selection checks.
+5. `CLAIMS_AND_LIMITATIONS.md` — supported wording and claim boundaries.
+6. `REPRODUCING.md` — raw-data, saved-output, testing, and figure commands.
 
-Safe shiftable-load opportunity is an offline estimate of controllable load that coincides with recommended intervals that were actually empty.
+## Canonical outputs
 
-Default controllable-load proxy:
+- Eight-model metrics: `results/canonical_model_comparison.csv`
+- Validation-selected 10% policies: `results/canonical_policy_10pct.csv`
+- Hybrid weights and provenance: `results/hybrid_candidate_registry.csv`
+- Validation weight searches: `results/hybrid_seasonal_transformer_weight_search.csv` and `results/hybrid_primary_weight_search.csv`
+- Validation/test risk sweeps: `results/hybrid_risk_opportunity_threshold_sweeps.csv`
+- Stable-window sensitivity: `results/hybrid_stable_window_sensitivity.csv`
+- Daily-block uncertainty: `results/hybrid_uncertainty_daily_block_bootstrap.csv`
+- Calibration: `results/hybrid_calibration_summary.csv`
+- Hybrid predictions: `predictions/hybrid_ensemble_validation_predictions.csv` and `predictions/hybrid_ensemble_test_predictions.csv`
 
-`P_controllable = hvac_S + lig_S`
+Established base results remain in place; the hybrid integration does not silently replace them.
 
-For each safe recommended 15-minute interval:
+## Key figures
 
-`kWh = P_controllable * 0.25`
+- `figures/canonical_empty_metrics_comparison.png`
+- `figures/risk_opportunity_validation_vs_test_diagnostic.png`
+- `figures/hybrid_stable_window_sensitivity.png`
+- `figures/hybrid_lightgbm_historical_same_day.png`
+- `figures/transformer_old_vs_new.png`
+- `figures/hybrid_reliability_analysis.png`
 
-This is not verified energy savings. The repository does not include a counterfactual building simulation, BMS intervention, thermal-comfort model, occupant-response study, or real deployment evaluation.
+## Repository layout
 
-## Repository Layout
+- `src/` — reusable data, model, evaluation, policy, and hybrid-analysis code.
+- `scripts/run_all.py` — full raw-data training/evaluation path.
+- `scripts/generate_figures.py` — regenerate base and hybrid figures from saved results.
+- `scripts/generate_hybrid_artifacts.py` — regenerate hybrid weights, tables, uncertainty, predictions, and figures without retraining.
+- `results/`, `figures/`, `predictions/` — canonical outputs.
+- `reports/` — audit and integration reports.
+- `archive/new_staging_2026-07/` — staged notebook/script/result provenance.
+- `figures/archive/new_staging_2026-07/` — staged singular/plural figure trees.
+- `NEW/README.md` — closed staging manifest.
 
-- `src/` - reusable data preparation, feature engineering, modeling, evaluation, policy, energy-accounting, plotting, and pipeline code.
-- `scripts/run_all.py` - full Python pipeline for data preparation, model training, prediction export, result tables, and figures.
-- `scripts/generate_figures.py` - redraws figures from saved result CSVs without retraining models.
-- `scripts/check_environment.py` - checks Python version, third-party packages, and local module imports.
-- `LBNL_occupancy_forecasting_main.ipynb` - reporting-only notebook for inspecting saved tables and figures.
-- `results/` - canonical CSV outputs.
-- `figures/` - canonical PNG figures.
-- `predictions/` - per-model test prediction CSV files.
-- `results/archive/` and `figures/archive/` - preserved legacy duplicate or alias outputs.
-
-## Detailed Documents
-
-- `RESULTS_SUMMARY.md` - main numbers, method notes, canonical result files, and first figures to inspect.
-- `VALIDITY_CHECKLIST.md` - leakage prevention, evaluation protocol, and data-splitting validation.
-- `CLAIMS_AND_LIMITATIONS.md` - supported claims, unsupported claims, and wording boundaries.
-- `REPRODUCING.md` - full environment, data, test, pipeline, and figure-regeneration instructions.
-- `DATA.md` - raw Dryad data placement instructions.
-- `SIMULATION_SUMMARY.md` - detailed stable-window and risk-opportunity evaluation notes.
-- `FUTURE_WORK.md` - future research and paper-strengthening tasks.
-
-## Reproduce The Results
-
-The raw LBNL data is not committed. Full reproduction requires downloading the Dryad dataset first.
-
-1. Read `DATA.md` and download the LBNL Building 59 dataset from Dryad.
-2. Place the extracted data at:
-
-   `doi_10_7941_D1N33Q__v20220202/Building_59/Bldg59_clean data/`
-
-3. Create an environment with Python 3.10-3.12. Python 3.11 is recommended.
-
-   Conda path:
-
-   ```bash
-   conda env create -f environment.yml
-   conda activate decision-aware-occupancy
-   ```
-
-   Virtualenv path:
-
-   ```bash
-   python3.11 -m venv .venv
-   source .venv/bin/activate
-   python -m pip install --upgrade pip
-   python -m pip install -r requirements.txt
-   ```
-
-4. Check the environment:
-
-   ```bash
-   python scripts/check_environment.py
-   ```
-
-5. Run unit tests:
-
-   ```bash
-   python -m pytest -q
-   ```
-
-6. Execute the full pipeline:
-
-   ```bash
-   python scripts/run_all.py
-   ```
-
-The pipeline writes outputs to `results/`, `figures/`, and `predictions/`.
-
-To regenerate figures from existing result tables without retraining:
+## Quick reproduction from saved outputs
 
 ```bash
+python -m pytest -q
+python scripts/generate_hybrid_artifacts.py
 python scripts/generate_figures.py
 ```
 
-Figure regeneration reads saved CSV files from `results/` and may take several minutes depending on the machine.
+Full model retraining requires the external Dryad raw data described in `DATA.md`.
 
-Open `LBNL_occupancy_forecasting_main.ipynb` after running the scripts to review the saved report artifacts.
+## Interpretation boundary
 
-## Current Limitations
+Safe opportunity is the recorded `hvac_S + lig_S` load during recommended intervals that were actually empty:
 
-- Single-building, selected-zone evaluation.
-- Short held-out recommendation test period with 43 non-overlapping daily schedules.
-- Model metrics use overlapping rolling forecast intervals, so effective sample size is smaller than the interval count.
-- Threshold selection is validation-only, but risk estimates are fragile because daily validation/test blocks are limited.
-- Energy opportunity uses realized recorded loads offline and is not deployable expected savings.
-- Model training uses standard occupancy losses; the decision-aware part is the evaluation and threshold policy.
-- Transformer and DLinear baselines are exploratory and lightly tuned.
+`kWh = max(hvac_S + lig_S, 0) * 0.25 hour`
 
-Detailed claim boundaries are in `CLAIMS_AND_LIMITATIONS.md`. Leakage and split checks are in `VALIDITY_CHECKLIST.md`. Future-work items are in `FUTURE_WORK.md`.
+This is not verified savings, comfort preservation, carbon reduction, causal impact, or production readiness.

@@ -1,0 +1,6 @@
+﻿model,threshold_points,unique_conflict_points,pareto_points,min_conflict,max_conflict,max_safe_shiftable_load_kwh,conflict_rate_reversals_when_sorted_by_threshold,diagnosis
+Historical average,37,28,27,0.0,0.6006446991404012,2166.22484385625,0,Raw threshold path can zig-zag because occupancy conflict rate is a ratio; use non-dominated envelope for Pareto line.
+LightGBM,37,37,36,0.0415094339622641,0.5401968826907301,2244.17467959775,1,Raw threshold path can zig-zag because occupancy conflict rate is a ratio; use non-dominated envelope for Pareto line.
+Random forest,37,37,31,0.0,0.6408163265306123,2281.08697565125,5,Raw threshold path can zig-zag because occupancy conflict rate is a ratio; use non-dominated envelope for Pareto line.
+Transformer,37,37,34,0.0,0.5912855599567879,2250.532439831,2,Raw threshold path can zig-zag because occupancy conflict rate is a ratio; use non-dominated envelope for Pareto line.
+DLinear,37,37,23,0.1142857142857142,0.7190102890739833,2296.604158712,9,Raw threshold path can zig-zag because occupancy conflict rate is a ratio; use non-dominated envelope for Pareto line.

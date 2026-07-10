@@ -1,42 +1,59 @@
 # Validity Checklist
 
-- [x] Raw UTC timestamps are converted to Pacific Time before generating hour/day features.
-  - Raw LBNL timestamps are parsed as UTC and converted to `America/Los_Angeles`. Solar radiation peaks support this assumption.
-- [x] Raw label semantics are confirmed: occupied = 1.
-  - `occupied=1` is created when the maximum south-zone occupancy count in a 15-minute bin is greater than 0.
-- [x] Empty-class evaluation uses Empty = 1.
-  - Evaluation flips labels with `empty = 1 - occupied`; AUPRC, AUROC, F1, precision, and recall are reported for Empty.
-- [x] Historical Average uses training split only.
-  - Slot averages are computed from timestamps before the training boundary.
-- [x] Historical Average never uses validation or test labels.
-  - Validation/test labels are used only for threshold selection/evaluation.
-- [x] Rolling features use shift-before-rolling: arr[anchor-window:anchor].
-  - Rolling occupancy/count features exclude the current target and all future labels.
-- [x] Missing values use causal ffill + 0.0.
-  - Sensor/load missing values are forward-filled from past observations only; leading gaps use 0.0.
-- [x] No interpolate or bfill is used.
-  - A text search over notebook and result files finds no `interpolate` or `bfill` calls.
-- [x] No future sensor values are used as prediction inputs.
-  - Known future inputs are calendar/time features only.
-- [x] HVAC, lighting, MELs, and total load are not used as model inputs.
-  - These variables are excluded from the tabular/deep feature sets.
-- [x] Load variables are used only for energy opportunity estimation.
-  - Default opportunity uses `hvac_S + lig_S`; sensitivity scenarios are clearly labeled.
-- [x] Train/validation/test split is chronological.
-  - Splits follow local-time weekly boundaries.
-- [x] There is at least a 24-hour gap between train/validation/test splits.
-  - The measured train-validation and validation-test gaps are both 24.25 hours.
-- [x] Thresholds are selected on validation set only.
-  - Risk-constrained thresholds are chosen from validation daily threshold sweeps.
-- [x] Test set is used only for final evaluation.
-  - Test metrics are computed after fixed validation-selected thresholds are applied.
+## Base pipeline
 
-## Remaining Assumptions And Limitations
+- [x] Raw timestamps are interpreted as UTC and converted to `America/Los_Angeles` before time features.
+- [x] `occupied=1` is defined from the maximum selected south-zone occupancy count greater than zero.
+- [x] Evaluation uses `Empty=1`.
+- [x] Train, validation, and test splits are chronological.
+- [x] Train-validation and validation-test gaps are 24.25 hours.
+- [x] All models use a 96-step history and 96-step forecast horizon.
+- [x] Historical Average uses training labels only.
+- [x] Rolling features end before the forecast anchor (`arr[anchor-window:anchor]`).
+- [x] Missing inputs use causal forward-fill plus fixed zero for leading gaps.
+- [x] Future sensor values are excluded.
+- [x] HVAC, lighting, MELS, and total electric load are excluded from model features.
+- [x] Load is used only for offline opportunity accounting.
+- [x] Base seeded models use seeds 42, 43, and 44.
 
-- The source documentation does not explicitly state timestamp timezone. The pipeline assumes raw timestamps are UTC because the solar-radiation peak becomes physically plausible after UTC-to-Pacific conversion.
-- Safe shiftable-load opportunity is not verified energy savings. No counterfactual control model, simulator, or intervention data is available.
-- Occupancy conflict rate is not a full thermal comfort metric. PMV/PPD, setpoint response, occupant feedback, and comfort constraints are not modeled.
-- Results are limited to LBNL Building 59 selected south zones. Cross-zone validation is included, but cross-building generalization is not claimed.
-- Threshold policies are offline recommendations. A full RL scheduler is not implemented because no simulator or counterfactual energy response model is available.
+## Hybrid integration
 
-See `CLAIMS_AND_LIMITATIONS.md` for supported claims, unsupported claims, and future-work boundaries.
+- [x] Validation/test combined prediction exports have unique `(anchor, target, horizon)` keys.
+- [x] Every anchor has ordered horizon steps 1-96.
+- [x] Repeated predictions for a target timestamp agree on the actual label.
+- [x] Per-model test exports align with combined keys, labels, and probabilities.
+- [x] Validation targets end before test targets begin.
+- [x] Seasonal-Transformer alpha is selected on validation only.
+- [x] Primary three-way weights are selected on validation only using a declared 0.05 simplex grid.
+- [x] Test predictions are loaded by the integration routine only after weights are fixed.
+- [x] Hybrids blend Empty probabilities; no features, logits, labels, or decisions are mixed.
+- [x] Hybrid weights sum to one and are non-negative.
+- [x] No hybrid is retrained on validation or test.
+- [x] No post-hoc calibration is fit on test.
+- [x] Probability thresholds are selected on validation midnight horizons only.
+- [x] Opportunity selection maximizes validation safe kWh subject to validation conflict constraints.
+- [x] Fixed thresholds are evaluated on 43 held-out test midnight horizons.
+- [x] Full test threshold sweeps are labeled diagnostic and are not selection inputs.
+- [x] The test-ranked balanced candidate is labeled exploratory/supplementary.
+- [x] Test prediction timestamps align to processed HVAC+lighting load timestamps.
+
+Machine-readable evidence: `results/hybrid_input_alignment_audit.csv`, `results/hybrid_candidate_registry.csv`, and `results/hybrid_primary_weight_search.csv`.
+
+## Uncertainty and robustness
+
+- [x] 2,000 paired daily-block bootstrap resamples are reported for the primary, LightGBM, Historical Average, and their differences.
+- [x] Calibration diagnostics include Brier, log loss, 10-bin ECE, and a reliability curve.
+- [x] Stable-window sensitivity covers 0.25, 0.5, 1, 2, and 4 hours.
+- [ ] Hybrid-specific seed dispersion: blocked by missing aligned per-seed component predictions.
+- [ ] Hybrid rolling-origin validation: blocked by missing Transformer predictions for saved rolling folds.
+- [ ] External/cross-building validation: not available.
+- [ ] Counterfactual savings and thermal-comfort validation: not available.
+
+## Interpretation checks
+
+- [x] Zero observed conflict is described with sample size and finite-sample caution.
+- [x] Small AUPRC differences are not described as decisive.
+- [x] Opportunity is not described as verified savings.
+- [x] No causal, comfort, carbon, deployment, or universal-generalization claim is made.
+
+See `reports/new_artifact_integration_audit.md` for the full provenance and 11/11 statistical-fallacy scan.

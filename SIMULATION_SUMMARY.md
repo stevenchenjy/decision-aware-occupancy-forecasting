@@ -1,141 +1,76 @@
-# Offline Evaluation Summary: Risk-Constrained Stable Empty-Window Recommendation
+# Offline Risk-Constrained Recommendation Summary
 
 ## Purpose
 
-This offline evaluation converts day-ahead occupancy forecasts into threshold-based empty-window recommendations for facility-management decision support. The operating question is:
+This is an offline decision-layer evaluation, not a building simulation in the counterfactual-control sense. Forecast probabilities are converted into stable empty-window recommendations, and recorded load is counted as safe opportunity only when the recommendation coincides with actual emptiness.
 
-How much safe shiftable-load opportunity can be identified while keeping occupancy-conflict risk below a chosen constraint?
+## Policy definition
 
-The default selected example is LightGBM under the 10% validation-selected occupancy-conflict policy.
+For each model and risk limit `delta`:
 
-## 1. Stable-Window Evaluation
+1. Evaluate Empty thresholds `0.05..0.95` in steps of `0.025` on non-overlapping validation midnight horizons.
+2. Require at least four consecutive recommended Empty intervals (one hour).
+3. Select the threshold that maximizes validation safe opportunity subject to occupancy conflict `<= delta`.
+4. Apply the fixed threshold once to the 43 held-out test midnight horizons.
 
-Stable empty window means the model recommends Empty for at least N consecutive 15-minute intervals. This is closer to real building operations than evaluating isolated 15-minute intervals.
+The default risk limit is 10%.
 
-LightGBM, 10% validation-selected policy, selected Empty threshold = 0.95:
-
-| Minimum window | Test conflict rate | Window precision | Window recall | Safe opportunity | kWh/day | Recommended windows | Safe windows | Average duration |
-|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 hour | 4.15% | 84.21% | 27.14% | 493.9 kWh | 11.49 | 19 | 16 | 3.49 h |
-| 2 hours | 3.69% | 86.67% | 31.37% | 482.7 kWh | 11.23 | 15 | 13 | 4.07 h |
-| 4 hours | 1.48% | 80.00% | 22.73% | 313.2 kWh | 7.28 | 5 | 4 | 6.75 h |
-
-Files:
-
-- `results/stable_window_metrics.csv`
-- `figures/stable_window_sensitivity.png`
-
-## 2. Pareto Frontier Analysis
-
-The Pareto analysis sweeps Empty probability thresholds and plots:
-
-- X-axis: occupancy conflict rate
-- Y-axis: safe shiftable-load opportunity in kWh
-
-This shows each model's risk-reward tradeoff instead of a single operating point.
-
-Files:
-
-- `results/energy_risk_tradeoff_threshold_sweep.csv`
-- `results/energy_risk_pareto_frontier.csv`
-- `figures/energy_risk_tradeoff_pareto.png`
-
-## 3. Energy Opportunity Clarification
-
-The reported 493.9 kWh comes from:
-
-- Load variables: `hvac_S + lig_S`
-- Load interpretation: proxy controllable load, HVAC south plus lighting south
-- Formula: `kWh = kW * 0.25` for each 15-minute interval
-- Safe opportunity: recommended intervals that are actually empty only
-- Conflict intervals are excluded from safe opportunity
-
-LightGBM, 10% validation-selected policy:
+## Primary hybrid 10% policy
 
 | Quantity | Value |
 |---|---:|
-| Gross recommended load opportunity | 537.9 kWh |
-| Conflict load excluded | 44.0 kWh |
-| Safe shiftable-load opportunity | 493.9 kWh |
-| kWh/day | 11.49 |
-| Recommended windows | 19 |
-| Safe windows | 16 |
-| kWh/safe window | 30.87 |
+| Selected Empty threshold | 0.875 |
+| Validation conflict rate | 8.75% |
+| Test conflict rate | 0/259 = 0.00% observed |
+| Recommendation coverage | 6.27% |
+| Safe opportunity | 490.1 kWh |
+| Gross opportunity | 490.1 kWh |
+| Opportunity per day | 11.40 kWh/day |
+| Recommended/safe/conflict intervals | 259 / 259 / 0 |
+| Recommended/safe/conflict windows | 14 / 14 / 0 |
+| Average recommended window duration | 4.63 hours |
+| Test schedules | 43 days |
 
-Statistical period:
+The same test-period comparison is:
 
-- Test target period: 2019-01-09 00:00:00-08:00 to 2019-02-21 02:00:00-08:00
-- Non-overlapping daily schedules: 43
+- LightGBM: 493.9 kWh, 4.15% conflict, 265 recommended intervals, 19 windows.
+- Historical Average: 94.6 kWh, 0.00% conflict, 66 intervals, 12 windows.
+- Original Transformer: 97.4 kWh, 9.68% conflict, 31 intervals, 2 windows.
+- Seasonal-Transformer Blend: 457.9 kWh, 0.00% conflict, 249 intervals, 14 windows.
 
-Double-counting prevention:
+## Opportunity calculation
 
-- Energy-risk policy uses non-overlapping daily forecast anchors.
-- Stable windows are extracted as disjoint consecutive runs.
-- Overlapping rolling forecasts are not summed for energy opportunity.
+Default controllable-load proxy:
 
-Important wording:
+`P_controllable = max(hvac_S + lig_S, 0)`
 
-This is safe shiftable-load opportunity, not verified energy savings. Confirmed savings would require a counterfactual energy baseline, simulation, or intervention data.
+Per safe 15-minute interval:
 
-Files:
+`opportunity_kWh = P_controllable * 0.25`
 
-- `results/safe_shiftable_load_opportunity.csv`
-- `figures/safe_shiftable_load_by_model.png`
+Conflict intervals are excluded from safe opportunity. Daily midnight horizons prevent energy double counting across the overlapping model-evaluation forecasts.
 
-## 4. Robustness Checks
+## Stable-window sensitivity
 
-The package includes three robustness checks.
+The integrated sensitivity table evaluates minimum recommended durations of 0.25, 0.5, 1, 2, and 4 hours while keeping each model's validation-selected 10% threshold fixed. The primary hybrid remains at zero observed interval conflicts across those tested minimum durations; safe opportunity decreases from 497.0 kWh at 0.25 hours to 407.8 kWh at 4 hours.
 
-### Block Bootstrap Confidence Intervals
+Source: `results/hybrid_stable_window_sensitivity.csv` and `figures/hybrid_stable_window_sensitivity.png`.
 
-LightGBM, 10% policy, daily block bootstrap:
+## Risk-opportunity interpretation
 
-| Metric | Mean | 95% CI |
-|---|---:|---:|
-| Empty AUPRC | 0.8384 | [0.7700, 0.8958] |
-| Occupancy conflict rate | 4.43% | [0.00%, 11.82%] |
-| Safe shiftable-load opportunity | 527.2 kWh | [95.8, 1195.6] |
+The canonical two-panel figure distinguishes:
 
-### Rolling-Origin Validation
+- validation sweeps used for threshold selection,
+- Pareto-efficient frontiers,
+- validation-selected 10% operating points,
+- held-out test sweeps shown only as diagnostics.
 
-LightGBM rolling-origin temporal validation:
+The test sweep must not be used to choose a model, weight, or threshold. The exploratory balanced hybrid appears in the plot for supplementary comparison only.
 
-- Mean Empty AUPRC: 0.7951
-- Mean Empty F1: 0.7196
+Source: `results/hybrid_risk_opportunity_threshold_sweeps.csv` and `figures/risk_opportunity_validation_vs_test_diagnostic.png`.
 
-### Multiple Random Seeds
+## Uncertainty and safety language
 
-LightGBM multiple-seed check:
+Zero observed conflict is a finite-sample observation, not proof of a zero-risk policy. All 14 observed primary-hybrid recommendation windows were safe, but a one-sided independent-window upper bound is still about 19.3%, and the independence assumption is not justified. The held-out period is short and contains only one building and season range.
 
-- Empty AUPRC mean: 0.8354, range/CI stored in `results/robustness_summary.csv`
-- Empty F1 mean: 0.7579, range/CI stored in `results/robustness_summary.csv`
-
-Files:
-
-- `results/robustness_summary.csv`
-- `results/block_bootstrap_confidence_intervals.csv`
-- `results/rolling_origin_cv.csv`
-- `results/seed_model_metrics.csv`
-
-## 5. Example-Day Visualization
-
-The LightGBM example day illustrates how forecast becomes recommendation:
-
-1. Forecast future Empty probability.
-2. Apply the selected Empty threshold.
-3. Keep only stable windows with at least 1 continuous hour.
-4. Mark recommended windows as safe or conflict based on actual occupancy.
-5. Overlay HVAC+lighting load during the horizon.
-
-Selected example:
-
-- Model: LightGBM
-- Policy: 10% validation-selected occupancy-conflict policy
-- Selected threshold: 0.95
-- Forecast anchor: 2019-02-17 00:00:00-08:00
-
-Figure:
-
-- `figures/example_day_lightgbm_recommendation.png`
-
-The figure includes actual occupancy, predicted Empty probability, selected threshold, recommended windows, safe windows, conflict window definition, and load during the recommendation horizon.
+Use “safe shiftable-load opportunity under recorded test labels,” not “verified savings” or “guaranteed safe control.”
