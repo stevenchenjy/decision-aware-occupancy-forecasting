@@ -1,12 +1,17 @@
 import numpy as np
 import pandas as pd
 import pytest
+import inspect
 
 from src.hybrid_analysis import (
     BASE_PROBABILITY_COLUMNS,
     HORIZON_STEPS,
     convex_probability_blend,
+    generate_hybrid_artifacts,
+    policy_row,
+    select_policy_thresholds,
     select_primary_hybrid_weights,
+    select_weights_from_validation,
     validate_split_integrity,
 )
 
@@ -78,3 +83,29 @@ def test_split_integrity_rejects_validation_test_target_overlap():
     test = _prediction_frame("test", "2019-01-01 00:00:00+00:00", "2019-01-01")
     with pytest.raises(ValueError, match="overlap"):
         validate_split_integrity(validation, test)
+
+
+def test_fixed_threshold_policy_counts_safe_and_conflict_intervals():
+    y_empty = np.array([[1, 1, 0, 0, 1, 1]])
+    probability = np.array([[0.9, 0.8, 0.9, 0.9, 0.7, 0.8]])
+    kwh = np.ones_like(probability, dtype=float)
+    result = policy_row(
+        "fixture", y_empty, probability, kwh, threshold=0.75, split="test", min_steps=2
+    )
+    assert result["recommended_intervals"] == 4
+    assert result["safe_intervals"] == 2
+    assert result["conflict_intervals"] == 2
+    assert np.isclose(result["occupancy_conflict_rate"], 0.5)
+    assert np.isclose(result["safe_opportunity_kwh"], 2.0)
+
+
+def test_selection_interfaces_accept_validation_data_only():
+    assert list(inspect.signature(select_weights_from_validation).parameters) == ["validation"]
+    assert list(inspect.signature(select_policy_thresholds).parameters) == ["validation_sweep"]
+
+
+def test_generator_fixes_validation_selections_before_loading_test():
+    source = inspect.getsource(generate_hybrid_artifacts)
+    selection_position = source.index("selected = select_policy_thresholds(validation_sweep)")
+    test_load_position = source.index('forecast_predictions_test_all_models.csv')
+    assert selection_position < test_load_position

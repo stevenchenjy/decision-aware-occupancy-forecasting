@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 from sklearn.metrics import (
     average_precision_score,
     brier_score_loss,
@@ -719,6 +720,112 @@ def candidate_registry(selection: HybridSelection, metrics: pd.DataFrame) -> pd.
     )
 
 
+def hybrid_lineage_table(
+    selection: HybridSelection,
+    primary_search: pd.DataFrame,
+    selected: pd.DataFrame,
+    metrics: pd.DataFrame,
+    policy: pd.DataFrame,
+) -> pd.DataFrame:
+    """Return one machine-readable row per primary-hybrid component."""
+    selected10 = selected[
+        selected["model"].eq(PRIMARY_MODEL) & np.isclose(selected["risk_delta"], 0.10)
+    ].iloc[0]
+    test10 = policy[
+        policy["model"].eq(PRIMARY_MODEL) & np.isclose(policy["risk_delta"], 0.10)
+    ].iloc[0]
+    test_metric = metrics[metrics["model"].eq(PRIMARY_MODEL)].iloc[0]
+    validation_choice = primary_search[primary_search["selected_by_validation"]].iloc[0]
+    components = [
+        ("Historical Average", "historical_average_empty_probability", selection.primary_historical_weight),
+        ("LightGBM", "lightgbm_empty_probability", selection.primary_lightgbm_weight),
+        ("Original Transformer", "transformer_empty_probability", selection.primary_transformer_weight),
+    ]
+    rows = []
+    for component, probability_column, weight in components:
+        rows.append(
+            {
+                "final_model": PRIMARY_MODEL,
+                "component": component,
+                "component_probability_column": probability_column,
+                "blend_level": "empty-class probability",
+                "component_weight": weight,
+                "weights_sum": selection.primary_historical_weight
+                + selection.primary_lightgbm_weight
+                + selection.primary_transformer_weight,
+                "weights_nonnegative": all(value >= 0 for value in (
+                    selection.primary_historical_weight,
+                    selection.primary_lightgbm_weight,
+                    selection.primary_transformer_weight,
+                )),
+                "weight_selection_input": "results/forecast_predictions_validation_all_models.csv",
+                "weight_selection_split": "validation",
+                "weight_selection_objective": "maximum validation Empty AUPRC",
+                "weight_grid": "non-negative simplex; step=0.05",
+                "selected_validation_empty_auprc": validation_choice["validation_auprc_empty"],
+                "test_used_for_weight_selection": False,
+                "policy_selection_input": "validation midnight-anchored daily forecasts derived from saved validation predictions and processed load proxy",
+                "policy_selection_split": selected10["selection_split"],
+                "policy_selection_objective": selected10["selection_note"],
+                "policy_risk_limit": 0.10,
+                "selected_threshold": selected10["selected_threshold"],
+                "validation_conflict_rate": selected10["validation_conflict_rate"],
+                "validation_safe_opportunity_kwh": selected10["validation_safe_opportunity_kwh"],
+                "test_used_for_threshold_selection": False,
+                "test_evaluation_input": "results/forecast_predictions_test_all_models.csv",
+                "test_empty_auprc": test_metric["empty_auprc"],
+                "test_conflict_rate": test10["occupancy_conflict_rate"],
+                "test_safe_opportunity_kwh": test10["safe_opportunity_kwh"],
+                "test_recommended_intervals": test10["recommended_intervals"],
+                "test_recommended_windows": test10["recommended_windows"],
+                "validation_prediction_export": "predictions/hybrid_ensemble_validation_predictions.csv",
+                "test_prediction_export": "predictions/hybrid_ensemble_test_predictions.csv",
+                "base_models_retrained": False,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def compact_uncertainty_table(uncertainty: pd.DataFrame) -> pd.DataFrame:
+    """Presentation-sized subset of the full paired daily-block bootstrap."""
+    wanted_models = {PRIMARY_MODEL, "LightGBM", "Historical Average"}
+    wanted_metrics = {"empty_auprc", "safe_opportunity_kwh"}
+    keep = uncertainty[uncertainty["metric"].isin(wanted_metrics)].copy()
+    keep = keep[
+        (keep["estimate_type"].eq("model") & keep["model_or_contrast"].isin(wanted_models))
+        | keep["estimate_type"].eq("paired_difference")
+    ]
+    order = {
+        PRIMARY_MODEL: 0,
+        "LightGBM": 1,
+        "Historical Average": 2,
+        "Primary minus LightGBM": 3,
+        "Primary minus Historical Average": 4,
+    }
+    keep["display_order"] = keep["model_or_contrast"].map(order)
+    keep["resampling_unit"] = "43 non-overlapping midnight-anchored test forecast days"
+    keep["interpretation"] = np.where(
+        keep["estimate_type"].eq("paired_difference"),
+        "Paired difference; interval crossing zero does not establish a difference",
+        "Held-out point estimate with daily-block percentile interval",
+    )
+    return keep.sort_values(["display_order", "metric"])[
+        [
+            "estimate_type",
+            "model_or_contrast",
+            "metric",
+            "point_estimate",
+            "ci95_low",
+            "ci95_high",
+            "daily_blocks",
+            "bootstrap_reps",
+            "random_seed",
+            "resampling_unit",
+            "interpretation",
+        ]
+    ]
+
+
 def _metric_status(model: str) -> tuple[str, str]:
     if model == PRIMARY_MODEL:
         return "validation-selected primary", "validation-only blend weights and threshold"
@@ -878,6 +985,15 @@ def make_metric_figure(metrics: pd.DataFrame, path: Path) -> None:
         palette=MODEL_COLORS,
         ax=ax,
     )
+    for container, model in zip(ax.containers, MODEL_ORDER):
+        for patch in container.patches:
+            if model == PRIMARY_MODEL:
+                patch.set_edgecolor("black")
+                patch.set_linewidth(1.2)
+            elif model == EXPLORATORY_MODEL:
+                patch.set_hatch("///")
+                patch.set_edgecolor("#4A3228")
+                patch.set_linewidth(0.9)
     ax.set_ylim(0.5, 0.9)
     ax.set_xlabel("")
     ax.set_ylabel("Score")
@@ -886,7 +1002,12 @@ def make_metric_figure(metrics: pd.DataFrame, path: Path) -> None:
         labels=["Empty AUPRC", "Empty precision", "Empty recall", "Empty F1"],
     )
     ax.set_title("Held-out test metrics (Empty=1; overlapping rolling forecasts)")
-    ax.legend(title="Model", bbox_to_anchor=(1.01, 1), loc="upper left", fontsize=9)
+    handles, labels = ax.get_legend_handles_labels()
+    labels = [
+        f"{label} (supplementary)" if label == EXPLORATORY_MODEL else label
+        for label in labels
+    ]
+    ax.legend(handles, labels, title="Model", bbox_to_anchor=(1.01, 1), loc="upper left", fontsize=9)
     fig.text(
         0.5,
         0.015,
@@ -953,6 +1074,22 @@ def make_risk_opportunity_figure(
         axis.set_xlabel("Occupancy conflict rate")
         axis.xaxis.set_major_formatter(lambda value, _: f"{100*value:.0f}%")
         axis.grid(alpha=0.25)
+        if split.startswith("validation"):
+            axis.set_facecolor("#F5F9FF")
+        else:
+            axis.set_facecolor("#FFF7F7")
+            axis.text(
+                0.5,
+                0.91,
+                "DIAGNOSTIC TEST SWEEP — NOT USED FOR SELECTION",
+                transform=axis.transAxes,
+                ha="center",
+                va="center",
+                fontsize=11,
+                fontweight="bold",
+                color="#8B1A1A",
+                bbox={"boxstyle": "round,pad=0.35", "facecolor": "white", "edgecolor": "#C44E52", "alpha": 0.92},
+            )
     axes[0].set_ylabel("Safe shiftable-load opportunity (kWh)")
     handles = [
         Line2D([0], [0], color=MODEL_COLORS[model], lw=3, label=model) for model in MODEL_ORDER
@@ -966,6 +1103,70 @@ def make_risk_opportunity_figure(
     fig.legend(handles=handles, loc="lower center", ncol=5, fontsize=9, frameon=True)
     fig.suptitle("Risk-opportunity sweeps, Pareto frontiers, and fixed operating points", y=0.98)
     fig.tight_layout(rect=(0, 0.16, 1, 0.94))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
+def make_policy_figure(canonical_policy: pd.DataFrame, path: Path) -> None:
+    """Summarize fixed validation-selected 10% policies without test tuning."""
+    table = canonical_policy.set_index("model").loc[MODEL_ORDER].reset_index()
+    labels = [
+        "Exploratory hybrid\n(supplementary)" if model == EXPLORATORY_MODEL else model
+        for model in table["model"]
+    ]
+    x = np.arange(len(table))
+    colors = [MODEL_COLORS[model] for model in table["model"]]
+    sns.set_theme(style="whitegrid", context="talk")
+    fig, axes = plt.subplots(1, 2, figsize=(20, 8))
+    width = 0.38
+    axes[0].bar(
+        x - width / 2,
+        100 * table["validation_conflict_rate"],
+        width,
+        color=colors,
+        alpha=0.65,
+        label="Validation conflict",
+    )
+    test_bars = axes[0].bar(
+        x + width / 2,
+        100 * table["occupancy_conflict_rate"],
+        width,
+        color=colors,
+        label="Held-out test conflict",
+    )
+    axes[0].axhline(10, color="black", linestyle="--", linewidth=1.2, label="10% validation constraint")
+    axes[0].set_ylabel("Conflict rate")
+    axes[0].yaxis.set_major_formatter(lambda value, _: f"{value:.0f}%")
+    axes[0].set_title("A. Conflict at validation-selected thresholds")
+    axes[0].legend(fontsize=9)
+    opportunity_bars = axes[1].bar(x, table["safe_opportunity_kwh"], color=colors)
+    axes[1].set_ylabel("Safe opportunity (kWh)")
+    axes[1].set_title("B. Held-out safe opportunity")
+    for index, (bar, row) in enumerate(zip(opportunity_bars, table.itertuples(index=False))):
+        if row.model == EXPLORATORY_MODEL:
+            bar.set_hatch("///")
+            bar.set_edgecolor("#4A3228")
+            test_bars[index].set_hatch("///")
+        axes[1].annotate(
+            f"{row.safe_opportunity_kwh:.1f} kWh\nτ={row.selected_threshold:.3f}\n{row.safe_windows}/{row.recommended_windows} safe windows",
+            (bar.get_x() + bar.get_width() / 2, bar.get_height()),
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+    for axis in axes:
+        axis.set_xticks(x, labels=labels, rotation=28, ha="right", fontsize=9)
+        axis.grid(axis="y", alpha=0.25)
+    fig.suptitle("Validation-selected 10% risk policies evaluated once on held-out test data")
+    fig.text(
+        0.5,
+        0.01,
+        "Thresholds maximize validation safe opportunity subject to validation conflict ≤10%. The exploratory architecture remains supplementary because its model family was test-ranked.",
+        ha="center",
+        fontsize=10,
+    )
+    fig.tight_layout(rect=(0, 0.06, 1, 0.95))
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, dpi=200, bbox_inches="tight")
     plt.close(fig)
@@ -1060,26 +1261,52 @@ def same_day_outputs(
             }
         )
     sns.set_theme(style="whitegrid", context="talk")
-    fig, axes = plt.subplots(3, 1, figsize=(16, 11), sharex=True)
+    fig, axes = plt.subplots(4, 1, figsize=(16, 14), sharex=True, height_ratios=[1, 1, 1, 0.7])
     occupied = 1 - y_empty[chosen_day]
-    for axis, model in zip(axes, models):
+    for axis, model in zip(axes[:3], models):
         probability = probabilities[model][chosen_day]
         recommendation = recommendations[model][chosen_day]
         axis.plot(target_times, probability, color=MODEL_COLORS[model], linewidth=2.2, label="Predicted Empty probability")
         axis.axhline(thresholds[model], color="black", linestyle="--", linewidth=1.2, label="Selected threshold")
-        axis.fill_between(target_times, 0, occupied, step="post", color="#D62728", alpha=0.12, label="Actually occupied")
+        axis.fill_between(target_times, 0, occupied, step="post", color="#F6B6B6", alpha=0.55)
         for index, active in enumerate(recommendation):
             if active:
                 color = "#2CA02C" if y_empty[chosen_day, index] else "#D62728"
                 axis.axvspan(target_times.iloc[index], target_times.iloc[index] + pd.Timedelta(minutes=15), color=color, alpha=0.22)
         axis.set_ylim(-0.02, 1.03)
         axis.set_ylabel("Probability")
-        axis.set_title(model)
-    axes[0].legend(loc="upper right", ncol=3, fontsize=9)
+        axis.set_title(f"{model} (threshold={thresholds[model]:.3f})")
+    axes[3].step(
+        target_times,
+        kwh[chosen_day] / INTERVAL_HOURS,
+        where="post",
+        color="#333333",
+        linewidth=1.8,
+    )
+    axes[3].set_ylabel("Load proxy\n(kW)")
+    axes[3].set_title("Recorded controllable-load proxy: HVAC south + lighting south (explanatory only)")
+    legend_handles = [
+        Line2D([0], [0], color=MODEL_COLORS[PRIMARY_MODEL], linewidth=2.2, label="Predicted Empty probability"),
+        Line2D([0], [0], color="black", linestyle="--", linewidth=1.2, label="Validation-selected threshold"),
+        Patch(facecolor="#F6B6B6", alpha=0.55, label="Actually occupied"),
+        Patch(facecolor="#2CA02C", alpha=0.22, label="Safe recommended interval"),
+        Patch(facecolor="#D62728", alpha=0.22, label="Conflict recommended interval"),
+    ]
+    fig.legend(handles=legend_handles, loc="lower center", ncol=5, fontsize=9, frameon=True)
     axes[-1].xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
     axes[-1].set_xlabel("Held-out test time (Pacific)")
-    fig.suptitle(f"Same-day recommendation comparison: anchor {anchor_time}", y=0.995)
-    fig.tight_layout()
+    fig.suptitle(
+        f"Explanatory held-out-day example: fixed-policy recommendations from anchor {anchor_time}",
+        y=0.995,
+    )
+    fig.text(
+        0.5,
+        0.035,
+        "This day was chosen for visual informativeness after evaluation; it is not a selection or uncertainty analysis and the load proxy is not a measured savings outcome.",
+        ha="center",
+        fontsize=9,
+    )
+    fig.tight_layout(rect=(0, 0.095, 1, 0.975))
     figure_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(figure_path, dpi=200, bbox_inches="tight")
     plt.close(fig)
@@ -1100,15 +1327,28 @@ def make_old_vs_new_figure(metrics: pd.DataFrame, policy: pd.DataFrame, path: Pa
     axes[1].bar(models, policy_part["safe_opportunity_kwh"], color=colors)
     axes[1].set_ylabel("Safe opportunity (kWh)")
     axes[1].set_title("B. Validation-selected 10% policy")
+    metric_baseline = metric_part.loc["Original Transformer", "empty_auprc"]
+    policy_baseline = policy_part.loc["Original Transformer", "safe_opportunity_kwh"]
     for axis in axes:
         axis.tick_params(axis="x", rotation=18)
-        for patch in axis.patches:
+        for index, patch in enumerate(axis.patches):
+            if axis is axes[0]:
+                value = patch.get_height()
+                baseline = metric_baseline
+                value_label = f"{value:.3f}"
+            else:
+                value = patch.get_height()
+                baseline = policy_baseline
+                value_label = f"{value:.1f}"
+            delta = value - baseline
+            percent = 100 * delta / baseline
+            delta_label = "baseline" if index == 0 else f"Δ {delta:+.3f} ({percent:+.1f}%)" if axis is axes[0] else f"Δ {delta:+.1f} ({percent:+.1f}%)"
             axis.annotate(
-                f"{patch.get_height():.3f}" if axis is axes[0] else f"{patch.get_height():.1f}",
+                f"{value_label}\n{delta_label}",
                 (patch.get_x() + patch.get_width() / 2, patch.get_height()),
                 ha="center",
                 va="bottom",
-                fontsize=10,
+                fontsize=9,
             )
     fig.suptitle("Old versus new: seasonal blending and validation-selected hybridization")
     fig.tight_layout()
@@ -1215,6 +1455,8 @@ def generate_hybrid_artifacts(
     calibration_summary, calibration_points = calibration_outputs(test_probabilities, y_test)
     registry = candidate_registry(selection, metrics)
     canonical_policy = canonical_policy_table(selected, policy)
+    lineage = hybrid_lineage_table(selection, primary_search, selected, metrics, policy)
+    compact_uncertainty = compact_uncertainty_table(uncertainty)
 
     primary_policy = canonical_policy[canonical_policy["model"].eq(PRIMARY_MODEL)].iloc[0]
     recommended_intervals = int(primary_policy["recommended_intervals"])
@@ -1323,6 +1565,7 @@ def generate_hybrid_artifacts(
         results_dir / "hybrid_seasonal_transformer_weight_search.csv": seasonal_search,
         results_dir / "hybrid_primary_weight_search.csv": primary_search,
         results_dir / "hybrid_candidate_registry.csv": registry,
+        results_dir / "hybrid_lineage.csv": lineage,
         results_dir / "canonical_model_comparison.csv": metrics,
         results_dir / "hybrid_selected_threshold_policies.csv": selected,
         results_dir / "hybrid_policy_results_test.csv": policy,
@@ -1330,6 +1573,7 @@ def generate_hybrid_artifacts(
         results_dir / "hybrid_risk_opportunity_threshold_sweeps.csv": combined_sweep,
         results_dir / "hybrid_stable_window_sensitivity.csv": sensitivity,
         results_dir / "hybrid_uncertainty_daily_block_bootstrap.csv": uncertainty,
+        results_dir / "canonical_uncertainty_summary.csv": compact_uncertainty,
         results_dir / "hybrid_calibration_summary.csv": calibration_summary,
         results_dir / "hybrid_reliability_curve_points.csv": calibration_points,
         results_dir / "primary_hybrid_zero_conflict_bound.csv": zero_conflict,
@@ -1352,12 +1596,14 @@ def generate_hybrid_artifacts(
         metric_path = figures_dir / "canonical_empty_metrics_comparison.png"
         risk_path = figures_dir / "risk_opportunity_validation_vs_test_diagnostic.png"
         stable_path = figures_dir / "hybrid_stable_window_sensitivity.png"
+        policy_path = figures_dir / "canonical_policy_10pct_comparison.png"
         old_new_path = figures_dir / "transformer_old_vs_new.png"
         calibration_path = figures_dir / "hybrid_reliability_analysis.png"
         same_day_path = figures_dir / "hybrid_lightgbm_historical_same_day.png"
         make_metric_figure(metrics, metric_path)
         make_risk_opportunity_figure(combined_sweep, selected, policy, risk_path)
         make_stable_sensitivity_figure(sensitivity, stable_path)
+        make_policy_figure(canonical_policy, policy_path)
         make_old_vs_new_figure(metrics, policy, old_new_path)
         make_calibration_figure(calibration_points, calibration_path)
         same_day = same_day_outputs(
@@ -1376,6 +1622,7 @@ def generate_hybrid_artifacts(
                 metric_path,
                 risk_path,
                 stable_path,
+                policy_path,
                 old_new_path,
                 calibration_path,
                 same_day_path,

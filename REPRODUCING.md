@@ -33,7 +33,7 @@ python scripts/check_environment.py
 python -m pytest -q
 ```
 
-Tests include hybrid convex-blend calculations, weight-grid behavior, and validation/test split integrity.
+Tests include hybrid convex-blend calculations, weight-grid behavior, validation/test split integrity, fixed-threshold policy accounting, validation-before-test selection ordering, and exact canonical reproduction from saved prediction exports.
 
 ## 3. Reproduce the hybrid from saved outputs
 
@@ -110,9 +110,11 @@ Primary outputs:
 - `results/canonical_model_comparison.csv`
 - `results/canonical_policy_10pct.csv`
 - `results/hybrid_candidate_registry.csv`
+- `results/hybrid_lineage.csv`
 - `results/hybrid_primary_weight_search.csv`
 - `results/hybrid_risk_opportunity_threshold_sweeps.csv`
 - `results/hybrid_uncertainty_daily_block_bootstrap.csv`
+- `results/canonical_uncertainty_summary.csv`
 - `predictions/hybrid_ensemble_validation_predictions.csv`
 - `predictions/hybrid_ensemble_test_predictions.csv`
 

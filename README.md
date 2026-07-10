@@ -42,22 +42,27 @@ The point AUPRC is slightly above Historical Average (`0.8497`) and LightGBM (`0
 
 ## Start here
 
-1. `RESULTS_SUMMARY.md` — canonical results, differences, and uncertainty.
-2. `reports/new_artifact_integration_audit.md` — provenance and experimental-validity audit.
-3. `reports/new_artifact_integration_report.md` — integration changes and presentation paths.
-4. `VALIDITY_CHECKLIST.md` — leakage and selection checks.
-5. `CLAIMS_AND_LIMITATIONS.md` — supported wording and claim boundaries.
-6. `REPRODUCING.md` — raw-data, saved-output, testing, and figure commands.
+1. [RESULTS_SUMMARY.md](RESULTS_SUMMARY.md) — canonical results, differences, and uncertainty.
+2. [New artifact audit](reports/new_artifact_integration_audit.md) — provenance and experimental-validity audit.
+3. [Integration report](reports/new_artifact_integration_report.md) — integration changes and presentation paths.
+4. [Professor presentation guide](reports/professor_presentation_guide.md) — recommended main/appendix artifacts and speaking notes.
+5. [Current consistency audit](reports/current_result_consistency_audit.md) — cross-file numerical and claim consistency checks.
+6. [No-raw-data upgrade report](reports/no_raw_data_upgrade_report.md) — upgrades completed from saved outputs and remaining raw-data blockers.
+7. [VALIDITY_CHECKLIST.md](VALIDITY_CHECKLIST.md) — leakage and selection checks.
+8. [CLAIMS_AND_LIMITATIONS.md](CLAIMS_AND_LIMITATIONS.md) — supported wording and claim boundaries.
+9. [REPRODUCING.md](REPRODUCING.md) — raw-data, saved-output, testing, and figure commands.
 
 ## Canonical outputs
 
 - Eight-model metrics: `results/canonical_model_comparison.csv`
 - Validation-selected 10% policies: `results/canonical_policy_10pct.csv`
 - Hybrid weights and provenance: `results/hybrid_candidate_registry.csv`
+- Primary-hybrid component lineage: `results/hybrid_lineage.csv`
 - Validation weight searches: `results/hybrid_seasonal_transformer_weight_search.csv` and `results/hybrid_primary_weight_search.csv`
 - Validation/test risk sweeps: `results/hybrid_risk_opportunity_threshold_sweeps.csv`
 - Stable-window sensitivity: `results/hybrid_stable_window_sensitivity.csv`
 - Daily-block uncertainty: `results/hybrid_uncertainty_daily_block_bootstrap.csv`
+- Compact professor-facing uncertainty: `results/canonical_uncertainty_summary.csv`
 - Calibration: `results/hybrid_calibration_summary.csv`
 - Hybrid predictions: `predictions/hybrid_ensemble_validation_predictions.csv` and `predictions/hybrid_ensemble_test_predictions.csv`
 
@@ -66,6 +71,7 @@ Established base results remain in place; the hybrid integration does not silent
 ## Key figures
 
 - `figures/canonical_empty_metrics_comparison.png`
+- `figures/canonical_policy_10pct_comparison.png`
 - `figures/risk_opportunity_validation_vs_test_diagnostic.png`
 - `figures/hybrid_stable_window_sensitivity.png`
 - `figures/hybrid_lightgbm_historical_same_day.png`

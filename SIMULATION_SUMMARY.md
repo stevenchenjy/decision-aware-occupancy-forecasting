@@ -69,6 +69,8 @@ The test sweep must not be used to choose a model, weight, or threshold. The exp
 
 Source: `results/hybrid_risk_opportunity_threshold_sweeps.csv` and `figures/risk_opportunity_validation_vs_test_diagnostic.png`.
 
+The compact fixed-policy comparison is `figures/canonical_policy_10pct_comparison.png`; its underlying source is `results/canonical_policy_10pct.csv`.
+
 ## Uncertainty and safety language
 
 Zero observed conflict is a finite-sample observation, not proof of a zero-risk policy. All 14 observed primary-hybrid recommendation windows were safe, but a one-sided independent-window upper bound is still about 19.3%, and the independence assumption is not justified. The held-out period is short and contains only one building and season range.

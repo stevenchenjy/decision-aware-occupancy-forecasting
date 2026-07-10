@@ -37,7 +37,7 @@
 - [x] The test-ranked balanced candidate is labeled exploratory/supplementary.
 - [x] Test prediction timestamps align to processed HVAC+lighting load timestamps.
 
-Machine-readable evidence: `results/hybrid_input_alignment_audit.csv`, `results/hybrid_candidate_registry.csv`, and `results/hybrid_primary_weight_search.csv`.
+Machine-readable evidence: `results/hybrid_input_alignment_audit.csv`, `results/hybrid_lineage.csv`, `results/hybrid_candidate_registry.csv`, and `results/hybrid_primary_weight_search.csv`.
 
 ## Uncertainty and robustness
 
@@ -57,3 +57,5 @@ Machine-readable evidence: `results/hybrid_input_alignment_audit.csv`, `results/
 - [x] No causal, comfort, carbon, deployment, or universal-generalization claim is made.
 
 See `reports/new_artifact_integration_audit.md` for the full provenance and 11/11 statistical-fallacy scan.
+
+Regression evidence: `tests/test_hybrid_analysis.py` and `tests/test_canonical_hybrid_reproduction.py` verify selection ordering, policy counts, split separation, exact weights, canonical AUPRC, and the validation-selected threshold/result row.

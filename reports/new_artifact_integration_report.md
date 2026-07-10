@@ -99,6 +99,7 @@ The primary's conflict bootstrap interval is degenerate at zero because no obser
 - `results/canonical_model_comparison.csv`
 - `results/canonical_policy_10pct.csv`
 - `results/hybrid_candidate_registry.csv`
+- `results/hybrid_lineage.csv`
 - `results/hybrid_seasonal_transformer_weight_search.csv`
 - `results/hybrid_primary_weight_search.csv`
 - `results/hybrid_selected_threshold_policies.csv`
@@ -106,6 +107,7 @@ The primary's conflict bootstrap interval is degenerate at zero because no obser
 - `results/hybrid_risk_opportunity_threshold_sweeps.csv`
 - `results/hybrid_stable_window_sensitivity.csv`
 - `results/hybrid_uncertainty_daily_block_bootstrap.csv`
+- `results/canonical_uncertainty_summary.csv`
 - `results/hybrid_calibration_summary.csv`
 - `results/hybrid_reliability_curve_points.csv`
 - `results/hybrid_input_alignment_audit.csv`
@@ -114,7 +116,7 @@ The primary's conflict bootstrap interval is degenerate at zero because no obser
 - `results/hybrid_lightgbm_historical_same_day.csv`
 - `predictions/hybrid_ensemble_validation_predictions.csv`
 - `predictions/hybrid_ensemble_test_predictions.csv`
-- six active hybrid figures listed below
+- seven active hybrid figures listed below
 - `reports/new_artifact_integration_audit.md`
 - this report
 
@@ -142,20 +144,20 @@ The primary's conflict bootstrap interval is degenerate at zero because no obser
 - Original singular/plural staged figure trees: `figures/archive/new_staging_2026-07/`.
 - `NEW/` replaced by `NEW/README.md` pointing to canonical/archive destinations.
 
-Byte-identical and numerically equivalent duplicate CSVs plus runtime debris were removed from active staging after manifesting. Established scientific result tables retained their original hashes; only the generated `current_run_manifest.csv` changed to reflect new artifacts. Established figure regeneration was byte-stable.
+Byte-identical and numerically equivalent duplicate CSVs plus runtime debris were removed from active staging after manifesting. Established scientific result tables retained their original hashes; only the generated `current_run_manifest.csv` changed to reflect new artifacts. Unrelated established figures remain byte-stable; four canonical presentation figures were intentionally revised and one fixed-policy figure was added.
 
 ## Commands and verification
 
 | Command/check | Result |
 |---|---|
-| `python3 -m pytest -q` | 15 passed |
+| `python3 -m pytest -q` | 20 passed |
 | `python3 scripts/generate_hybrid_artifacts.py --bootstrap-reps 2000` | 24 artifacts regenerated |
 | `python3 scripts/generate_figures.py` | 26 figures regenerated |
 | `python3 scripts/generate_presentation_figures.py` | completed; earlier LightGBM/Historical presentation outputs regenerated |
 | Notebook JSON validation | pass |
-| Canonical required-path check | 17/17 present |
+| Canonical required-path check | all required paths present |
 | Original result hash check | all established scientific tables unchanged; generated manifest intentionally changed |
-| Original figure hash check | all pre-existing active figures byte-stable after regeneration |
+| Original figure hash check | unrelated figures byte-stable; four canonical figures intentionally updated and one added |
 | `python3 scripts/check_environment.py` | expected local-environment failure: Python 3.13 unsupported for declared reproduction and LightGBM lacks `libomp`; all local modules, including hybrid analysis, import |
 | Full `scripts/run_all.py` | not run; external raw Dryad directory is missing and local LightGBM runtime lacks `libomp` |
 
@@ -169,11 +171,13 @@ Use these active paths:
 
 1. `figures/transformer_old_vs_new.png` — concise original-to-seasonal-to-primary story.
 2. `figures/canonical_empty_metrics_comparison.png` — eight-model AUPRC/precision/recall/F1 comparison.
-3. `figures/risk_opportunity_validation_vs_test_diagnostic.png` — validation/test sweeps, Pareto frontiers, and fixed operating points.
-4. `figures/hybrid_stable_window_sensitivity.png` — conflict and opportunity across minimum durations.
-5. `figures/hybrid_lightgbm_historical_same_day.png` — same held-out day for primary hybrid, LightGBM, and Historical Average.
-6. `figures/hybrid_reliability_analysis.png` — calibration diagnostic.
-7. `results/canonical_model_comparison.csv` — presentation metric source table.
-8. `results/canonical_policy_10pct.csv` — presentation policy source table.
+3. `figures/canonical_policy_10pct_comparison.png` — fixed validation-selected 10% policy comparison.
+4. `figures/risk_opportunity_validation_vs_test_diagnostic.png` — validation/test sweeps, Pareto frontiers, and fixed operating points.
+5. `figures/hybrid_stable_window_sensitivity.png` — conflict and opportunity across minimum durations.
+6. `figures/hybrid_lightgbm_historical_same_day.png` — explanatory same held-out day for primary hybrid, LightGBM, and Historical Average.
+7. `figures/hybrid_reliability_analysis.png` — calibration diagnostic.
+8. `results/canonical_model_comparison.csv` — presentation metric source table.
+9. `results/canonical_policy_10pct.csv` — presentation policy source table.
+10. `results/canonical_uncertainty_summary.csv` — compact uncertainty source table.
 
 Do not use archived `risk_energy_pareto_frontier_clean.png` or the test-ranked balanced model as a deployable headline.
