@@ -1,5 +1,10 @@
 # Next Phase Recommendation
 
+> **Scope note (2026-07-24):** Additional data acquisition and new-period
+> validation are not part of the current phase. The recommendation below remains
+> the correct protocol if that scope changes; it is intentionally deferred, not
+> approximated using the already-inspected validation or test periods.
+
 ## Material Passport
 
 - Origin Skill: academic-research-suite / experiment-agent
@@ -105,4 +110,3 @@ Only after a new input package is locked:
 - tests that reject overlapping dates, changed candidate definitions, test-ranked selection, and incomplete gate reporting
 
 No file should be named or described as an untouched result until the data-firewall audit passes.
-

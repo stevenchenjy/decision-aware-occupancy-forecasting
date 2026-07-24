@@ -2,6 +2,13 @@
 
 The scriptable pipeline, hybrid integration, daily-block uncertainty, calibration diagnostics, and presentation figures are now implemented. Remaining priorities are:
 
+The current no-additional-data phase is complete: the joint weight-threshold
+surface, window-aware constraints, candidate freeze, retrospective diagnostics,
+reproduction commands, claim boundaries, and future evaluation protocol are all
+documented. Items below that require new predictions, raw data, or an untouched
+period are deliberately deferred rather than approximated from the already-inspected
+validation/test exports.
+
 | Priority | Improvement | Missing requirement | Benefit |
 |---:|---|---|---|
 | 1 | Hybrid multiple-seed robustness | Save aligned validation/test component predictions for every seed, then blend within seed | Separates ensemble gain from seed luck |
@@ -15,4 +22,8 @@ The scriptable pipeline, hybrid integration, daily-block uncertainty, calibratio
 | 9 | Model serialization and inference contract | Versioned weights, feature schema, environment, and monitoring plan | Supports repeatable deployment research |
 | 10 | Test-set quarantine workflow | Immutable test artifact and automated selection audit | Prevents accidental test-guided iteration |
 
-The immediate professor-facing next step should be hybrid rolling-origin and per-seed evidence, not further test-set candidate search.
+For the current professor-facing package, present the canonical result first and
+the decision-aware/window-aware work as an exploratory appendix. If additional
+data work resumes later, the first empirical priority is the frozen one-shot
+evaluation protocol, followed by matched rolling-origin and per-seed evidence—not
+further candidate search on the current test set.

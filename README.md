@@ -29,6 +29,34 @@ On 43 held-out test days:
 
 The point AUPRC is slightly above Historical Average (`0.8497`) and LightGBM (`0.8382`), but paired daily-block confidence intervals for those differences include zero. The observed 0% conflict is specific to this test period and is not a universal safety guarantee.
 
+## Exploratory decision-aware extensions
+
+The canonical model above is unchanged. Two later validation-only searches ask a
+different question: which already-saved probability blend and operating threshold
+identify more safe load-proxy opportunity while retaining explicit forecasting and
+occupancy-conflict safeguards?
+
+- **Joint weight-threshold search:** evaluates all 231 non-negative
+  Seasonal/LightGBM/Transformer weight vectors on the 0.05 simplex against 37
+  thresholds, for 8,547 validation pairs. It maximizes validation safe opportunity
+  subject to interval conflict `<=10%`, positive coverage, and at least one stable
+  one-hour window. A 99%-of-best-validation-AUPRC variant limits forecast-quality
+  loss.
+- **Window-aware search:** applies predeclared AUPRC and fully-safe-window floors
+  to the same frozen validation surface. Its primary future challenger is
+  `0.40/0.40/0.20` at threshold `0.850`, selected under a fully safe window floor
+  of 85% and an AUPRC floor of 99%.
+
+The joint-search challengers produced larger safe-opportunity point estimates on
+the already-inspected current test, but also about 3% interval conflict versus zero
+observed conflict for the canonical primary. These candidates remain exploratory:
+the current test results cannot be used to promote or retune them, and no new
+untouched evaluation period is included in this repository.
+
+Start with the [joint-search report](reports/decision_aware_joint_search_report.md),
+the [window-aware report](reports/window_aware_decision_search_report.md), and the
+[future untouched-evaluation protocol](reports/future_untouched_evaluation_protocol.md).
+
 ## Model roles
 
 | Family | Role |
@@ -39,6 +67,8 @@ The point AUPRC is slightly above Historical Average (`0.8497`) and LightGBM (`0
 | Seasonal-Transformer Blend | Validation-selected two-way intermediate (`0.54/0.46`) |
 | Hybrid Seasonal-GBDT-Transformer | Validation-selected primary hybrid (`0.15/0.60/0.25`) |
 | Exploratory Hybrid Balanced Tree-Deep | Test-ranked supplementary candidate (`0.8554` test AUPRC); not a selected deployment policy |
+| Decision-aware joint hybrids | Validation-selected exploratory challengers; not canonical |
+| Window-aware hybrid | Frozen future-evaluation challenger (`0.40/0.40/0.20 @ 0.850`); current-test values are retrospective |
 
 ## Start here
 
@@ -51,6 +81,8 @@ The point AUPRC is slightly above Historical Average (`0.8497`) and LightGBM (`0
 7. [VALIDITY_CHECKLIST.md](VALIDITY_CHECKLIST.md) — leakage and selection checks.
 8. [CLAIMS_AND_LIMITATIONS.md](CLAIMS_AND_LIMITATIONS.md) — supported wording and claim boundaries.
 9. [REPRODUCING.md](REPRODUCING.md) — raw-data, saved-output, testing, and figure commands.
+10. [Decision-aware joint-search report](reports/decision_aware_joint_search_report.md) — validation-only joint weight-threshold results.
+11. [Window-aware search report](reports/window_aware_decision_search_report.md) — stable-window constraints and the frozen future challenger.
 
 ## Canonical outputs
 
@@ -77,6 +109,12 @@ Established base results remain in place; the hybrid integration does not silent
 - `figures/hybrid_lightgbm_historical_same_day.png`
 - `figures/transformer_old_vs_new.png`
 - `figures/hybrid_reliability_analysis.png`
+
+## Exploratory decision-aware figures
+
+- `figures/decision_aware_joint_validation_frontier.png`
+- `figures/decision_aware_joint_test_comparison.png`
+- `figures/window_aware_validation_tradeoff.png`
 
 ## Repository layout
 

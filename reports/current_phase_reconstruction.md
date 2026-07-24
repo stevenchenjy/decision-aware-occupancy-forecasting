@@ -1,5 +1,11 @@
 # Current Phase Reconstruction
 
+> **Current-status update (2026-07-24):** This document reconstructs the repository
+> as it stood on 2026-07-17. Since then, the professor-facing guide has been restored,
+> the reconstruction/next-step reports have been committed, and `main` is synchronized
+> with `origin/main`. The historical commit-ahead statements below describe the
+> inspection-time state, not the current Git state.
+
 ## Material Passport
 
 - Origin Skill: academic-research-suite / experiment-agent
@@ -56,10 +62,10 @@ Therefore, a prompt after the original joint-search implementation was executed.
 
 ## 3. Work that appears partially completed
 
-- **Professor-facing integration:** dedicated decision-aware and window-aware reports/figures exist, but the previously canonical professor guide was deleted and not replaced. The active `README.md` link was broken. This reconstruction repairs that documentation gap.
-- **Remote publication:** the complete latest commit is local only; `main` is one commit ahead of `origin/main`.
+- **Professor-facing integration — resolved:** the dedicated reports/figures and restored professor guide are now linked from the root documentation, with canonical and exploratory roles kept separate.
+- **Remote publication — resolved:** as of 2026-07-24, `main` and `origin/main` point to the same commit.
 - **Rendering reproducibility:** two fresh runs under Python 3.13.2, Matplotlib 3.10.9, and Pillow 12.2.0 produced identical PNG hashes to one another, but not to the three committed decision-aware PNG hashes. Dimensions were equal for two figures and differed by one pixel in height for the third. The CSVs and Markdown reports were byte-identical. This is an environment-sensitive presentation-rendering gap, not metric drift.
-- **Future evaluation:** the protocol and candidate freeze are complete, but no genuinely new evaluation block has been acquired or evaluated.
+- **Future evaluation — deliberately deferred:** the protocol and candidate freeze are complete, but no genuinely new evaluation block is in the current no-additional-data scope.
 
 ## 4. Work that was proposed but never implemented
 
@@ -99,8 +105,8 @@ None is canonical. No current-test result may be used to alter these candidates 
 
 ## 7. Tests and reproduction status
 
-- `python3 -m pytest -q tests/test_decision_aware_joint_search.py`: **7 passed**.
-- `python3 -m pytest -q`: **35 passed**. The historical 27-test count is consistent with the 20 earlier tests plus the 7 joint-search tests; the 8 later window-aware tests bring the current total to 35.
+- At reconstruction time, `tests/test_decision_aware_joint_search.py` had **7 passing tests** and the full suite had **35 passing tests**.
+- As of 2026-07-24, the declared `231 × 37 = 8,547` search-space invariant has its own regression test: the decision-aware file has **8 passing tests** and the full suite has **36 passing tests**.
 - The saved-output joint-search runner completed in a temporary detached worktree without accessing Dryad data or retraining.
 - The two reports and three CSV outputs were byte-identical to the committed artifacts. Candidate values and all 8,547 grid rows therefore reproduce exactly.
 - Two same-environment figure reruns were byte-identical to each other. Their hashes differed from the committed PNGs, consistent with renderer-version sensitivity; no committed file was overwritten.
@@ -118,4 +124,4 @@ None is canonical. No current-test result may be used to alter these candidates 
 7. **Limited effective safety sample:** observed windows are clustered within days; zero current conflict is finite-sample evidence only.
 8. **No causal savings evidence:** safe opportunity is coincidence with recorded controllable-load proxy, not measured or counterfactual savings.
 9. **Renderer not pinned:** scientific tables reproduce exactly, but committed PNG bytes do not reproduce under the current plotting stack.
-10. **Local-only latest commit:** the scientific additions in `0c813fd` are not on `origin/main`.
+10. **Remote publication (resolved 2026-07-24):** the scientific additions and reconstruction reports are on `origin/main`; local `main` is synchronized.

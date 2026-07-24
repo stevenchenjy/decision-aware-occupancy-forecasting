@@ -39,6 +39,26 @@
 
 Machine-readable evidence: `results/hybrid_input_alignment_audit.csv`, `results/hybrid_lineage.csv`, `results/hybrid_candidate_registry.csv`, and `results/hybrid_primary_weight_search.csv`.
 
+## Decision-aware joint and window-aware searches
+
+- [x] The joint search covers 231 legal non-negative 0.05-simplex weight vectors and 37 declared thresholds (8,547 validation pairs).
+- [x] Joint candidate selection accepts validation-grid input only and does not accept a test prediction frame.
+- [x] Every selected decision-aware candidate has positive coverage, at least one stable recommended window, and validation interval conflict `<=10%`.
+- [x] The 99%-floor candidate must retain at least 99% of the best validation Empty AUPRC.
+- [x] Selection tie-breaks are deterministic and end with the declared grid order.
+- [x] The canonical weights and threshold are reproduced before joint-search test evaluation proceeds.
+- [x] Test predictions are loaded only after joint-search candidates are fixed.
+- [x] Fixed-candidate test evaluation rejects candidates marked as test-selected.
+- [x] The window-aware search applies predeclared fully-safe-window and AUPRC floors to the validation-only surface.
+- [x] Current-test window-aware values are labeled retrospective diagnostics and are not selection inputs.
+- [x] Decision-aware and window-aware candidates remain exploratory and do not replace the canonical primary.
+- [ ] Promotion on a genuinely untouched chronological period: deliberately deferred; no additional data are in scope.
+
+Machine-readable evidence: `results/decision_aware_joint_weight_threshold_grid.csv`,
+`results/decision_aware_joint_selected_candidates.csv`,
+`results/window_aware_joint_selection_grid.csv`, and
+`results/window_aware_selected_candidates.csv`.
+
 ## Uncertainty and robustness
 
 - [x] 2,000 paired daily-block bootstrap resamples are reported for the primary, LightGBM, Historical Average, and their differences.
@@ -59,3 +79,9 @@ Machine-readable evidence: `results/hybrid_input_alignment_audit.csv`, `results/
 See `reports/new_artifact_integration_audit.md` for the full provenance and 11/11 statistical-fallacy scan.
 
 Regression evidence: `tests/test_hybrid_analysis.py` and `tests/test_canonical_hybrid_reproduction.py` verify selection ordering, policy counts, split separation, exact weights, canonical AUPRC, and the validation-selected threshold/result row.
+
+Decision-aware regression evidence:
+`tests/test_decision_aware_joint_search.py` and
+`tests/test_window_aware_decision_search.py` verify search-space invariants,
+constraint enforcement, deterministic selection, validation/test separation,
+fixed-candidate evaluation, and rejection of test-informed selection inputs.

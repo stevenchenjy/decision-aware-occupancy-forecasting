@@ -12,7 +12,7 @@ from src.decision_aware_joint_search import (
     select_validation_candidates,
     simplex_weight_grid,
 )
-from src.hybrid_analysis import BASE_PROBABILITY_COLUMNS, HORIZON_STEPS
+from src.hybrid_analysis import BASE_PROBABILITY_COLUMNS, HORIZON_STEPS, THRESHOLDS
 
 
 def _grid_row(**updates):
@@ -55,6 +55,12 @@ def test_simplex_weights_are_nonnegative_and_sum_to_one():
     weights = grid[["seasonal_weight", "lightgbm_weight", "transformer_weight"]]
     assert (weights.to_numpy() >= 0).all()
     np.testing.assert_allclose(weights.sum(axis=1), 1.0)
+
+
+def test_declared_joint_search_space_contains_8547_pairs():
+    assert len(simplex_weight_grid(0.05)) == 231
+    assert len(THRESHOLDS) == 37
+    assert len(simplex_weight_grid(0.05)) * len(THRESHOLDS) == 8_547
 
 
 def test_candidate_selection_interface_excludes_test_predictions():
