@@ -1,5 +1,5 @@
-﻿load_variable,available_in_dataset,unit_assumption,used_as_model_input,role
-hvac_S,True,kW before multiplying by 0.25 h,False,default_controllable_load
-lig_S,True,kW before multiplying by 0.25 h,False,default_controllable_load
-mels_S,True,kW before multiplying by 0.25 h,False,opportunity_sensitivity_only
-ele_south_total,True,kW before multiplying by 0.25 h,False,opportunity_sensitivity_only
+load_variable,available_in_dataset,unit_assumption,used_as_model_input,role,interpretation
+hvac_S,True,kW before multiplying by 0.25 h,False,default_offline_load_proxy,processed meter proxy only; not verified controllability or savings
+lig_S,True,kW before multiplying by 0.25 h,False,default_offline_load_proxy,processed meter proxy only; not verified controllability or savings
+mels_S,True,kW before multiplying by 0.25 h,False,offline_proxy_sensitivity_only,processed meter proxy only; not verified controllability or savings
+ele_south_total,True,kW before multiplying by 0.25 h,False,offline_proxy_sensitivity_only,processed meter proxy only; not verified controllability or savings

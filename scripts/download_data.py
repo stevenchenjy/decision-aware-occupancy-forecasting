@@ -36,7 +36,8 @@ def main() -> int:
       ele.csv
       zone_co2.csv
 
-    Raw data is intentionally not committed to this repository.
+    This is a cleaned release. It supports only a legacy cleaned-release replay;
+    it does not supply original stream provenance or empirical validation.
     See DATA.md for the full expected folder structure.
     """
     print(dedent(message).strip())
@@ -45,4 +46,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

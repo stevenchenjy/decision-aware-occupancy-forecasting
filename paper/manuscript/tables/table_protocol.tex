@@ -1,0 +1,23 @@
+\begin{table}[!t]
+\caption{Data and canonical evaluation protocol.}
+\label{tab:protocol}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{0.37\columnwidth}p{0.55\columnwidth}}
+\toprule
+Item & Canonical setting \\
+\midrule
+Data scope & Cleaned Building~59 selected south-zone streams; 26,413 15-min local-time rows, 22 May 2018--21 Feb. 2019 02:00 \\
+Empty target & Camera-derived Empty $=1$ iff the maximum selected south-zone count is zero in the 15-min bin \\
+Chronological splits & Train: 23 May--25 Nov. 2018 (32.65\% Empty); validation: 28 Nov. 2018--6 Jan. 2019 (29.64\%); test: 9 Jan.--21 Feb. 2019 (27.75\%) \\
+Boundary separation & 24.25-h train--validation and validation--test gaps \\
+Input-bin timing & Anchor label $t$ denotes completed left-labelled $[t,t+15\text{ min})$ bin; effective boundary $t+15$ min \\
+Forecast scope & 96 history and 96 target steps; targets $[t+15\text{ min},t+24\text{ h}+15\text{ min})$; all overlapping test forecasts \\
+Policy scope & 39 validation and 43 test midnight-labelled, non-overlapping horizons; effective test boundary 00:15 \\
+Stable recommendation & Contiguous Empty score at or above threshold for $\geq4$ steps (1 h), extracted independently in each policy horizon \\
+Opportunity proxy & Post-import row-order-filled $\max(\mathrm{HVAC}_{S}+\mathrm{lighting}_{S},0)\times0.25$ h only in recommended-and-camera-label-empty intervals \\
+Source limit & Original stream timestamps and upstream imputation lineage unavailable; no prospective availability claim \\
+\bottomrule
+\end{tabular}
+\end{table}

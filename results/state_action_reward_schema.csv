@@ -1,5 +1,5 @@
-﻿field,definition
-state,"Past occupancy sequence, issue-time sensors, known future calendar features, current forecast probabilities."
-action,Recommend or do not recommend shifting a controllable load/schedule into a predicted empty interval.
-reward,Safe controllable kWh opportunity minus occupancy-conflict penalty and missed-opportunity penalty.
-transition,Advance one interval or one decision horizon; future integration can connect this table to Sinergym/EnergyPlus.
+field,definition,scope
+state,"Past occupancy sequence, completed-input-bin sensors, known future calendar features, and current uncalibrated forecast scores.",future simulation design; no real-time availability proof
+action,Future simulator placeholder: recommend or do not recommend a hypothetical schedule change for a predicted empty interval.,not an executed building-control action
+reward,Future simulator objective: offline camera-label-empty processed-load-proxy overlap minus empirical-conflict and missed-overlap penalties.,not realized energy savings
+transition,Future simulator placeholder: advance one interval or decision horizon; an external simulator could define physical dynamics.,not executed in this study

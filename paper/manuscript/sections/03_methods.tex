@@ -1,0 +1,47 @@
+\section{Methodology}
+
+\subsection{Data, Target, Timing, and Information Set}
+
+The source is the cleaned LBNL Building~59 release described by Luo \emph{et al.}~\cite{Luo2022} and distributed through Dryad~\cite{Hong2022}. The repository retains one selected south-zone subset and resamples the imported streams to 15-min bins. An interval receives the camera-derived occupied label when the maximum selected south-zone camera count is greater than zero. The analysis flips this label so that $y_{d,t}=1$ denotes \emptyclass{} and $y_{d,t}=0$ denotes camera-labeled occupied. Thus, \emptyclass{} means no detected occupant in the selected camera counts, not verified physical absence. The analysis contains 26,413 local-time rows from May~2018 through February~2019. Table~\ref{tab:protocol} gives the exact split and policy scopes.
+
+Naive source timestamps are interpreted as UTC and converted to \texttt{America/Los\_Angeles} before time features are formed. A solar-radiation peak sanity check supports this interpretation, but the source documentation does not explicitly state the timestamp timezone. More importantly, each resampled record uses an explicit left-closed, left-labelled convention: its label $t$ denotes $[t,t+15\text{ min})$. The tabular and sequence models consume the anchor record, so this paper treats its effective availability boundary as $t+15$ min, after the completed bin. Its first target bin begins at that boundary; a 96-step horizon spans $[t+15\text{ min},t+24\text{ h}+15\text{ min})$. A policy anchor labelled 00:00 therefore has an effective boundary at 00:15 and targets the following 96 bins, not a recommendation available at 00:00.
+
+Calendar variables are known for future target times. The tabular information set comprises past occupancy/count lags and rolling summaries, completed-input-bin Wi-Fi, temperature, and weather values, and target-time calendar variables. After import, environmental and association-count sensors are forward-filled in row order only; leading missing values are set to zero. This operation prevents new backward fills within the repository, but it cannot establish causal provenance for imputation already present in the cleaned release. Wi-Fi has 81.57\% missingness before this fill and no staleness cap or missingness-sensitivity analysis is applied. HVAC, lighting, other electrical-load streams, and their aggregate are excluded from predictor features. The retained HVAC and lighting series are used only after forecasting for the offline opportunity calculation.
+
+\input{tables/table_protocol}
+
+Each rolling forecast uses 96 historical 15-min intervals and predicts the next 96 intervals. Chronological train, validation, and test segments are separated by 24.25-h gaps. This prevents a saved forecast history or target window from straddling a split boundary. It supports a clean distinction between fitting, policy selection, and held-out saved-output evaluation; it does not resolve source-level timestamp or imputation provenance.
+
+\subsection{Forecast Models and Validation-Selected Score Blend}
+
+The comparison includes a train-only historical weekday/time-slot average, LightGBM, random forest, a direct linear occupancy baseline (legacy artifact key \texttt{DLinear}), and a compact Transformer encoder (legacy artifact key \texttt{Original Transformer}). Table~\ref{tab:model-settings} gives the stored implementation settings. The saved outputs are bounded $[0,1]$ Empty-class scores. They are denoted by $p$ below for compactness, but no post-hoc calibrator is fitted and they must not be interpreted as calibrated conditional probabilities. Historical runs bear seed labels 42, 43, and 44 and their stored scores are pointwise averaged. However, deep modules were instantiated before the seed-reset function was called, so those labels do not establish controlled initialization; a corrected full retraining is required for a seed-dispersion claim.
+
+The saved primary hybrid blends three Empty-class scores, not labels, features, or logits. For time $t$ it is
+\begin{equation}
+p_{\mathrm{H}}(t)=0.15p_{\mathrm{hist}}(t)+0.60p_{\mathrm{LGBM}}(t)+0.25p_{\mathrm{Tr}}(t),
+\label{eq:blend}
+\end{equation}
+where the nonnegative weights sum to one. These values are the nominal maximum of validation AUPRC on a declared 0.05 simplex grid of 231 legal weights. Test scores are loaded only after this canonical selection. No hybrid component is retrained on validation or test data. The small separation among validation candidates is evaluated explicitly in Section~V-B rather than being treated as proof of a uniquely optimal blend.
+
+\input{tables/table_model_settings}
+
+\subsection{Stable-Window Policy and Offline Opportunity}
+
+For a model-specific score threshold $\tau$, define an initial recommendation $b_{d,t}=\mathbb{1}[p_{d,t}\geq\tau]$. Let $L=4$ be the number of 15-min intervals in one hour. The policy recommendation $r_{d,t}$ equals one only when $b_{d,t}$ belongs to a contiguous run of at least $L$ intervals within a midnight-labelled daily horizon. Runs are extracted independently within each 24-h forecast horizon and never join different horizons. The interval camera-label-conflict rate is
+\begin{equation}
+C=\frac{\sum_{d,t}r_{d,t}(1-y_{d,t})}{\sum_{d,t}r_{d,t}},
+\label{eq:conflict}
+\end{equation}
+with $C=0$ if there are no recommendations.
+
+Let $\widetilde{h}_{d,t}$ and $\widetilde{\ell}_{d,t}$ denote the processed south-HVAC and south-lighting meter streams, respectively, in nominal kW. Define
+\begin{equation}
+q_{d,t}=0.25\max(\widetilde{h}_{d,t}+\widetilde{\ell}_{d,t},0),
+\label{eq:load-proxy}
+\end{equation}
+which is a processed meter-derived 15-min load proxy in kWh. The nominal full-metered accounting convention uses a coefficient of one for each stream, and multiplication by 0.25~h converts kW to interval kWh. Each stream is 8.03\% missing before the post-import row-order forward fill, so $q$ includes carried-forward values and is neither a fully observed meter series nor a verified controllable load. The paper reports
+\begin{equation}
+O_{\mathrm{safe}}=\sum_{d,t}r_{d,t}y_{d,t}q_{d,t}.
+\label{eq:opportunity}
+\end{equation}
+Equation~\eqref{eq:opportunity} is an offline overlap measure: it sums the processed load proxy only where a recommendation and a subsequently observed camera-derived Empty label coincide. It neither changes a load nor estimates the counterfactual load under a control action. For each model, $\tau$ is selected from $\{0.050,0.075,\ldots,0.950\}$ on validation midnight-labelled horizons to maximize $O_{\mathrm{safe}}$ subject to the empirical condition $C_{\mathrm{val}}\leq0.10$, breaking exact opportunity ties by Empty recall. Because $O_{\mathrm{safe}}$ requires realized labels and processed loads, it is an offline validation-selection objective, not an online decision-time quantity. The selected threshold is then fixed for all test policy calculations.

@@ -9,9 +9,11 @@ from src.hybrid_analysis import (
     convex_probability_blend,
     generate_hybrid_artifacts,
     policy_row,
+    processed_load_proxy_kwh,
     select_policy_thresholds,
     select_primary_hybrid_weights,
     select_weights_from_validation,
+    validate_prediction_frame,
     validate_split_integrity,
 )
 
@@ -73,16 +75,25 @@ def _prediction_frame(split: str, anchor: str, target_start: str) -> pd.DataFram
 
 
 def test_split_integrity_accepts_disjoint_chronological_exports():
-    validation = _prediction_frame("validation", "2019-01-01 00:00:00+00:00", "2019-01-01")
-    test = _prediction_frame("test", "2019-01-04 00:00:00+00:00", "2019-01-04")
+    validation = _prediction_frame("validation", "2019-01-01 00:00:00+00:00", "2019-01-01 00:15")
+    test = _prediction_frame("test", "2019-01-04 00:00:00+00:00", "2019-01-04 00:15")
     validate_split_integrity(validation, test)
 
 
 def test_split_integrity_rejects_validation_test_target_overlap():
-    validation = _prediction_frame("validation", "2019-01-01 00:00:00+00:00", "2019-01-01")
-    test = _prediction_frame("test", "2019-01-01 00:00:00+00:00", "2019-01-01")
+    validation = _prediction_frame("validation", "2019-01-01 00:00:00+00:00", "2019-01-01 00:15")
+    test = _prediction_frame("test", "2019-01-01 00:00:00+00:00", "2019-01-01 00:15")
     with pytest.raises(ValueError, match="overlap"):
         validate_split_integrity(validation, test)
+
+
+def test_prediction_validation_rejects_noncausal_timestamp_offsets():
+    frame = _prediction_frame(
+        "validation", "2019-01-01 00:00:00+00:00", "2019-01-01 00:15"
+    )
+    frame.loc[0, "target_time"] = "2019-01-01 00:00:00+00:00"
+    with pytest.raises(ValueError, match="target timestamps"):
+        validate_prediction_frame(frame, "validation")
 
 
 def test_fixed_threshold_policy_counts_safe_and_conflict_intervals():
@@ -97,6 +108,28 @@ def test_fixed_threshold_policy_counts_safe_and_conflict_intervals():
     assert result["conflict_intervals"] == 2
     assert np.isclose(result["occupancy_conflict_rate"], 0.5)
     assert np.isclose(result["safe_opportunity_kwh"], 2.0)
+
+
+def test_processed_load_proxy_is_interval_energy_not_a_control_claim():
+    frame = pd.DataFrame(
+        {
+            "target_time": [
+                "2019-01-01 00:15:00+00:00",
+                "2019-01-01 00:30:00+00:00",
+            ]
+        }
+    )
+    processed = pd.DataFrame(
+        {
+            "date_local": frame["target_time"],
+            "hvac_S": [4.0, 2.0],
+            "lig_S": [2.0, 2.0],
+        }
+    )
+    np.testing.assert_allclose(
+        processed_load_proxy_kwh(frame, processed),
+        np.array([1.5, 1.0]),
+    )
 
 
 def test_selection_interfaces_accept_validation_data_only():

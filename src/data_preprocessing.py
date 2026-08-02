@@ -4,7 +4,11 @@ import pandas as pd
 
 
 def read_timeseries(path, raw_timezone="UTC", local_timezone="America/Los_Angeles"):
-    """Read a LBNL CSV and convert naive raw timestamps to local time."""
+    """Read a CSV using an explicit, unverified naive-timestamp assumption.
+
+    The raw timezone is a working assumption for the cleaned release, not
+    evidence of upstream timestamp provenance or real-time availability.
+    """
     raw = pd.read_csv(path)
     if "date" not in raw.columns:
         raw = raw.rename(columns={raw.columns[0]: "date"})
@@ -20,7 +24,13 @@ def read_timeseries(path, raw_timezone="UTC", local_timezone="America/Los_Angele
 
 
 def resample_mean(df, freq="15min"):
-    return df.set_index("date").sort_index().resample(freq).mean()
+    """Aggregate left-closed, left-labelled bins [t, t+freq)."""
+    return (
+        df.set_index("date")
+        .sort_index()
+        .resample(freq, closed="left", label="left")
+        .mean()
+    )
 
 
 def create_occupancy_frame(data_dir, freq="15min", occupied_count_threshold=0.0):
@@ -29,8 +39,12 @@ def create_occupancy_frame(data_dir, freq="15min", occupied_count_threshold=0.0)
     occ_raw["occ_count"] = occ_raw[occ_cols].sum(axis=1, min_count=1)
     occ = pd.DataFrame(
         {
-            "occ_count_mean": occ_raw["occ_count"].resample(freq).mean(),
-            "occ_count_max": occ_raw["occ_count"].resample(freq).max(),
+            "occ_count_mean": occ_raw["occ_count"]
+            .resample(freq, closed="left", label="left")
+            .mean(),
+            "occ_count_max": occ_raw["occ_count"]
+            .resample(freq, closed="left", label="left")
+            .max(),
         }
     )
     occ["occupied"] = (occ["occ_count_max"] > occupied_count_threshold).astype(float)
@@ -38,12 +52,24 @@ def create_occupancy_frame(data_dir, freq="15min", occupied_count_threshold=0.0)
     return occ.dropna(subset=["occ_count_mean", "occupied"]).sort_index()
 
 
-def causal_fill(frame, protected_columns):
-    """Leakage-safe missing handling: past-only ffill and fixed 0.0 leading fill."""
+def post_import_forward_fill(frame, protected_columns):
+    """Fill imported rows in order without asserting causal source provenance.
+
+    This helper neither restores raw-stream availability nor establishes that a
+    filled value was available to a real-time forecaster at the left bin edge.
+    """
     out = frame.copy()
     cols = [c for c in out.columns if c not in set(protected_columns)]
     out[cols] = out[cols].ffill().fillna(0.0)
     return out
+
+
+def causal_fill(frame, protected_columns):
+    """Compatibility alias for post_import_forward_fill.
+
+    The historical name must not be read as proof of causal preprocessing.
+    """
+    return post_import_forward_fill(frame, protected_columns)
 
 
 def chronological_split(index, history_steps=96, horizon_steps=96, train_fraction=0.70, val_fraction=0.15, gap_steps=96):

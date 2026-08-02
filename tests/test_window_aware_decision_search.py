@@ -11,6 +11,7 @@ from src.window_aware_decision_search import (
     conflict_window_severity_from_arrays,
     expand_window_aware_constraint_grid,
     fully_safe_window_metrics,
+    run_window_aware_decision_search,
     select_window_aware_candidates,
 )
 
@@ -88,6 +89,14 @@ def test_validation_only_selection_rejects_test_metrics():
     expanded["test_safe_opportunity_kwh"] = 999.0
     with pytest.raises(ValueError, match="forbidden"):
         select_window_aware_candidates(expanded)
+
+
+def test_window_runner_freezes_validation_candidates_before_full_audit():
+    source = inspect.getsource(run_window_aware_decision_search)
+    selection_position = source.index("all_constraint_candidates = select_window_aware_candidates(expanded)")
+    audit_position = source.index("audit_text, sufficient = _audit_report")
+    test_load_position = source.index('current_test = _read_csv(results_dir / "forecast_predictions_test_all_models.csv")')
+    assert selection_position < audit_position < test_load_position
 
 
 def test_deterministic_tie_breaking_prefers_higher_safe_rate_then_grid_order():

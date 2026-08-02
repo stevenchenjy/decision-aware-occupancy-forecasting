@@ -1,7 +1,7 @@
-﻿metric,definition
-AUPRC/F1/Precision/Recall,Computed with Empty=1 as the positive class.
-Occupancy conflict rate,False empty recommendations / all empty recommendations = 1 - empty-window precision.
-Standard FPR,False empty recommendations / all actually occupied windows.
-Safe shiftable-load opportunity,"Sum over safe recommended intervals of P_t,controllable * 0.25 hour; default controllable load is HVAC south + lighting south."
-Gross estimated opportunity,Recommended controllable-load kWh before excluding occupancy conflicts.
-Continuous empty-window metrics,"Window-level precision/recall/conflict are computed on disjoint runs from non-overlapping daily forecasts for 1h, 2h, and 4h minimum durations."
+metric,definition,scope
+AUPRC/F1/Precision/Recall,Computed with Empty=1 as the positive class.,classification diagnostic over the stated saved-output rows
+Occupancy conflict rate,Occupied camera-labelled recommendations / all recommendations = 1 - empty-window precision.,empirical interval conflict; not a probabilistic safety guarantee
+Standard FPR,Occupied camera-labelled recommendations / all actually occupied intervals.,classification diagnostic
+Offline camera-label-empty load-proxy overlap,Sum over camera-label-empty recommended intervals of processed HVAC south plus lighting south meter kW times 0.25 hour.,offline overlap only; not verified controllability or energy savings
+Gross processed load-proxy overlap,Processed HVAC-plus-lighting meter kWh over all recommended intervals before excluding occupied camera labels.,offline accounting only
+Continuous empty-window metrics,"Window-level precision, recall, and conflict are computed on disjoint runs from non-overlapping daily forecasts for 1h, 2h, and 4h minimum durations.",post-bin saved-output diagnostic

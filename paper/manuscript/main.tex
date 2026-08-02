@@ -1,0 +1,66 @@
+% IEEE-style manuscript prepared from the repository's canonical saved outputs.
+% Before submission, replace the anonymous author block and verify the exact
+% target-venue template, page limit, disclosure, and reference requirements.
+\documentclass[conference]{IEEEtran}
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{balance}
+\usepackage[hidelinks]{hyperref}
+\graphicspath{{figures/}}
+
+\newcommand{\emptyclass}{\textsc{Empty}}
+\newcommand{\safeopportunity}{offline camera-label-empty load-proxy overlap}
+\newcommand{\primaryhybrid}{primary hybrid}
+\newcommand{\lgbm}{LightGBM}
+
+\newif\ifanonymous
+\anonymoustrue
+
+\title{Validation-Selected Empty-Window Recommendations: An Offline Post-Bin Occupancy-Forecasting Case Study}
+
+\ifanonymous
+\author{\IEEEauthorblockN{Anonymous Author(s)}
+\IEEEauthorblockA{Author information withheld for review}}
+\else
+\author{\IEEEauthorblockN{Author Name(s)}
+\IEEEauthorblockA{Affiliation(s)\\
+City, Country\\
+Email address(es)}}
+\fi
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{sections/00_abstract}
+\end{abstract}
+
+\begin{IEEEkeywords}
+occupancy forecasting, building energy management, offline load opportunity, post-bin evaluation, stable empty windows, validation-selected recommendation
+\end{IEEEkeywords}
+
+\input{sections/01_introduction}
+\input{sections/02_related_work}
+\input{sections/03_methods}
+\input{sections/04_experimental_design}
+\input{sections/05_results}
+\input{sections/06_discussion}
+\input{sections/07_conclusion}
+\appendices
+\input{appendices/appendix_exploratory_status}
+
+\section*{Data and Code Availability}
+The cleaned Building~59 data package is available from Dryad~\cite{Hong2022}; original acquisition streams, source-side imputation lineage, and timestamp provenance are not committed to this repository. The submitted artifact should include the repository revision, the canonical saved prediction and result exports, and the scripts used to regenerate the manuscript figures and tables. A persistent archival URL must be inserted here before submission.
+
+\section*{Author Contributions, Funding, and Competing Interests}
+To preserve anonymous review, contributor identities, funding information, and conflict-of-interest declarations are omitted from this draft. The corresponding author must replace this statement with the target venue's required declarations before submission.
+
+\balance
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{document}

@@ -1,0 +1,18 @@
+\begin{table*}[!t]
+\caption{Validation-only selection-stability diagnostics. The blend perturbation uses 39 non-overlapping validation policy horizons and the top 12 full-overlap grid candidates; it is descriptive and does not replace the canonical all-overlap selection. Threshold diagnostics apply the declared validation policy rule. No test export is read.}
+\label{tab:selection-stability}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{p{0.26\textwidth}p{0.40\textwidth}r}
+\toprule
+Diagnostic & Result & Frequency / value \\
+\midrule
+Full-overlap 231-weight grid & Nominal rank-1 AUPRC; rank-1 minus rank-2; candidates within 0.0005 & 0.728638; 0.000032; 8 \\
+Daily-block bootstrap, top-12 blends (1,000) & Canonical $(0.15,0.60,0.25)$ selected; most frequent $(0.05,0.80,0.15)$ & 23 (2.3\%); 365 (36.5\%) \\
+Leave-one-validation-horizon-out, top-12 blends (39) & Canonical selected; most frequent $(0.05,0.75,0.20)$ & 1 (2.6\%); 31 (79.5\%) \\
+Daily-block bootstrap, primary threshold (1,000) & Canonical $\tau=0.875$; $\tau=0.850$; $\tau=0.950$ & 111 (11.1\%); 376 (37.6\%); 375 (37.5\%) \\
+Leave-one-validation-horizon-out, primary threshold (39) & Canonical $\tau=0.875$ & 36 (92.3\%) \\
+\bottomrule
+\end{tabular}
+\end{table*}

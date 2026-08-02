@@ -1,90 +1,33 @@
 # Claims and Limitations
 
-Use this document when preparing slides, emails, abstracts, or manuscripts.
+## Required status line
 
-## Supported claims
+> This is an offline, post-bin saved-output case study. The current repository supports reproducible opportunity accounting, not a prospective real-time operating claim. Audit verdict: requires empirical rerun.
 
-- The project evaluates 24-hour-ahead occupancy forecasts for LBNL Building 59 selected south zones at 15-minute resolution.
-- Raw timestamps are interpreted as UTC and converted to Pacific time before calendar features are created.
-- Empty is the positive class for recommendation-oriented metrics.
-- Historical Average uses training labels only and represents a strong recurring weekday/time-slot schedule prior.
-- Original models and all hybrids use the same chronological validation/test prediction rows and target definition.
-- Seasonal-Transformer weights are selected by validation Empty AUPRC on a 0.01 grid.
-- Primary Seasonal-GBDT-Transformer weights are selected by validation Empty AUPRC on a 0.05 simplex grid.
-- Risk-policy thresholds are selected on validation midnight horizons and evaluated on held-out test midnight horizons.
-- The primary hybrid reports test Empty AUPRC `0.8514`, 490.1 kWh safe opportunity, and zero observed conflicts among 259 recommended intervals across 43 test days.
-- LightGBM reports 493.9 kWh safe opportunity and 4.15% test conflict under its validation-selected 10% policy.
-- The primary hybrid and LightGBM have nearly equal safe-opportunity point estimates; their paired daily-block difference interval includes zero.
-- The primary hybrid's AUPRC point estimate is slightly above Historical Average and LightGBM, but paired daily-block difference intervals include zero.
-- Safe opportunity counts only recommended intervals that were actually empty and uses recorded `hvac_S + lig_S` load.
-- The exploratory joint search evaluated 8,547 weight-threshold pairs on validation and selected candidates by safe opportunity under explicit conflict, coverage, stable-window, and optional AUPRC-floor constraints.
-- After validation-only selection, the unconstrained and 99%-AUPRC-floor candidates produced current-test safe-opportunity point estimates of 623.5 and 650.4 kWh, with observed interval conflict rates of 2.98% and 3.09%, respectively.
-- These decision-aware current-test results are descriptive fixed-candidate evaluations, not evidence sufficient to replace the canonical primary.
+## Supported wording
 
-Preferred thesis wording:
+- The source is the cleaned LBNL Building 59 release; the repository analyzes selected south-zone streams at 15-min resolution.
+- An anchor labelled 't' represents the completed left-labelled bin '[t,t+15 min)'; the effective availability boundary is 't+15 min'.
+- Empty is the positive class for recommendation-oriented metrics and means no detected occupant in selected camera counts, not verified physical absence.
+- The canonical primary blend uses Historical/LightGBM/compact-Transformer scores with nominal weights 0.15/0.60/0.25 selected on validation AUPRC before canonical test scores are read.
+- The all-overlap primary AUPRC is 0.8514 across 388,032 rows (4,042 anchors); 43 horizons apply only to fixed policy accounting.
+- The primary fixed policy has 259/259 subsequently camera-label-empty recommendations, 14/14 camera-label-safe windows, and 490.1 kWh of offline processed-load-proxy opportunity.
+- The primary point AUPRC advantage is small, paired contrasts cross zero, and validation perturbations do not identify unique blend weights or threshold.
+- LightGBM has 493.9 kWh proxy opportunity and 11/265 camera-label conflicts under its nominal validation-selected policy.
+- Decision-aware and window-aware results are exploratory historical diagnostics, not a replacement primary result.
 
-> Strong recurring occupancy schedules explain the performance of Historical Average. A validation-selected probability hybrid combines that schedule prior with nonlinear tabular and temporal-sequence forecasts. In this held-out period its AUPRC point estimate is slightly higher than the schedule baseline, and its 10% policy identifies nearly the same safe opportunity as LightGBM with zero observed conflicts. The small model-level differences are uncertain, and zero observed conflict is not a universal guarantee.
+## Mandatory qualifiers
 
-## Model-status boundaries
-
-- Original models: Historical Average, LightGBM, Random Forest, original Transformer, and DLinear.
-- Validated intermediate: Seasonal-Transformer Blend (`Historical=0.54`, `Transformer=0.46`).
-- Primary: Hybrid Seasonal-GBDT-Transformer (`Historical=0.15`, `LightGBM=0.60`, `Transformer=0.25`).
-- Supplementary only: Exploratory Hybrid Balanced Tree-Deep (`Historical=0.20`, `LightGBM=0.50`, `Random Forest=0.10`, `Transformer=0.20`).
-- Exploratory decision-aware: joint-search candidates `0.65/0.05/0.30 @ 0.775` and `0.35/0.35/0.30 @ 0.800`.
-- Frozen future challenger: window-aware `0.40/0.40/0.20 @ 0.850`; eligible for future one-shot evaluation, not current promotion.
-- The exploratory balanced model must not be described as the selected best model merely because its test AUPRC is `0.8554`.
+- Call the outputs “uncalibrated Empty-class scores in [0,1],” not calibrated probabilities.
+- Call the 10% rule an “empirical validation interval-conflict cutoff,” not a future-risk guarantee.
+- Call the opportunity an “offline processed-load-proxy overlap,” not savings, shifted energy, capacity, or delivered flexibility.
+- Display models as “compact Transformer encoder (legacy Original Transformer)” and “direct linear occupancy baseline (legacy DLinear)”.
+- Explain that deep models were built before seed reset; saved seed labels do not establish controlled initialization.
 
 ## Unsupported claims
 
-Do not claim:
+Do not claim real-time midnight issuance, causal source preprocessing, source-level leakage freedom, calibrated risk, verified energy savings, comfort preservation, physical absence, controller performance, zero future conflict, generalization beyond this building/period, statistically decisive model superiority, or fresh confirmation of expanded searches.
 
-- verified or causal energy savings,
-- deployed BMS/controller performance,
-- guaranteed zero occupancy conflict,
-- comfort preservation or thermal-comfort compliance,
-- carbon-emission reductions,
-- a learned decision-aware loss,
-- replacement of the canonical primary based on the already-inspected decision-aware or window-aware current-test diagnostics,
-- fresh or independent confirmation of the exploratory joint/window-aware candidates,
-- reinforcement-learning scheduler performance,
-- generalization to other buildings, zones, seasons, or years,
-- statistically decisive AUPRC superiority over Historical Average or LightGBM,
-- hybrid robustness equal to LightGBM across seeds or rolling origins,
-- production readiness.
+## Required empirical next step
 
-## Key limitations
-
-- One building and selected zones.
-- Thirty-nine validation and 43 test non-overlapping daily policy horizons.
-- Model-level metrics use overlapping forecasts, reducing effective sample size.
-- Hybrid-specific per-seed predictions were not saved.
-- Rolling-origin outputs omit Transformer predictions, preventing hybrid rolling-origin reconstruction.
-- The primary blend search is now declared, but it was reconstructed after the staged script hard-coded the same weights.
-- The exploratory shortlist was not documented before test inspection.
-- Zero-conflict resampling is degenerate because every observed primary-hybrid block has zero conflicts; unseen conflicts cannot be generated by bootstrap.
-- Raw source data are external, so full end-to-end retraining was not performed during integration.
-- Opportunity uses realized recorded load, not a counterfactual load response.
-- The joint search considered 8,547 validation pairs, so its exploratory candidates are exposed to selection optimism.
-- No additional untouched period is currently available; data-dependent promotion, per-seed hybrid evidence, and full-hybrid rolling-origin evidence are intentionally deferred.
-
-## Recommended language
-
-Use:
-
-- “validation-selected probability hybrid”
-- “offline safe shiftable-load opportunity”
-- “zero observed test conflicts in this period”
-- “point estimate slightly above; uncertainty intervals overlap”
-- “test-ranked exploratory candidate”
-- “validation-selected exploratory decision-aware candidate”
-- “retrospective current-test diagnostic”
-
-Avoid:
-
-- “guaranteed safe”
-- “verified savings”
-- “decisively better”
-- “best model” when referring to the test-ranked balanced candidate
-- “new primary” or “validated replacement” for a decision-aware/window-aware challenger
-- “calibrated” unless referring only to the reported diagnostics; no recalibration was applied
+Use raw/provenance-tagged source streams with observation-end timestamps; define the bin-end convention; correct seed initialization; lock environment and selection protocol; fully retrain; and evaluate once on a later untouched period or new building. Add a simulation or intervention before making energy/control claims.

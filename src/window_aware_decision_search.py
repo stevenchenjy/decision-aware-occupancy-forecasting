@@ -19,7 +19,7 @@ from src.decision_aware_joint_search import COMPONENT_COLUMNS
 from src.hybrid_analysis import (
     DEFAULT_STABLE_STEPS,
     HORIZON_STEPS,
-    controllable_kwh,
+    processed_load_proxy_kwh,
     daily_anchor_indices,
     extract_windows,
     model_metric_row,
@@ -363,7 +363,7 @@ def select_window_aware_candidates(expanded_validation_grid: pd.DataFrame) -> pd
                     "candidate_role": "window_aware_validation_selected",
                     "selection_split": "validation_only",
                     "current_test_used_for_selection": False,
-                    "selection_objective": "maximum validation safe opportunity under declared constraints",
+                    "selection_objective": "maximum validation offline camera-label-empty load-proxy overlap under declared constraints",
                     "safe_window_floor": window_floor,
                     "auprc_floor_label": floor_label,
                     "auprc_floor_ratio": np.nan if floor_ratio is None else floor_ratio,
@@ -530,7 +530,7 @@ def _daily_arrays(frame: pd.DataFrame, processed: pd.DataFrame) -> dict[str, np.
     return {
         "indices": indices,
         "y": reshape_daily(frame["actual_empty_positive"].to_numpy(dtype=int), indices),
-        "kwh": reshape_daily(controllable_kwh(frame, processed), indices),
+        "kwh": reshape_daily(processed_load_proxy_kwh(frame, processed), indices),
         "components": components,
         "anchors": anchor_rows.iloc[indices].astype(str).to_numpy(),
         "targets": reshape_daily(frame["target_time"].astype(str).to_numpy(), indices),
@@ -745,23 +745,23 @@ The audit uses saved predictions and processed load outputs only. It does not re
 
 ## Exact current definitions
 
-- **Recommended interval:** a 15-minute interval whose Empty probability is at or above the fixed threshold and belongs to a contiguous above-threshold run of at least four intervals. Shorter runs are not recommended.
-- **Safe interval:** a recommended interval with observed `actual_empty_positive=1`.
+- **Recommended interval:** a 15-minute interval whose uncalibrated Empty score is at or above the fixed threshold and belongs to a contiguous above-threshold run of at least four intervals. Shorter runs are not recommended.
+- **Camera-label-empty interval:** a recommended interval with subsequently observed `actual_empty_positive=1`.
 - **Conflict interval:** a recommended interval with observed `actual_empty_positive=0` (occupied).
-- **Stable recommended window:** one maximal contiguous run of recommended intervals within a midnight-anchored 96-step horizon. Windows do not join across horizon/day boundaries.
-- **Fully safe window:** a stable recommended window for which every interval is observed Empty.
+- **Stable recommended window:** one maximal contiguous run of recommended intervals within a midnight-labelled completed-input-bin 96-step horizon; its effective availability boundary is 00:15 for a 00:00 label. Windows do not join across horizon/day boundaries.
+- **All-camera-label-empty window:** a stable recommended window for which every interval is subsequently observed Empty.
 - **Conflict window:** a stable recommended window containing **any** occupied interval. One occupied 15-minute interval is sufficient.
 - **Interval conflict rate:** `conflict intervals / recommended intervals`; defined as zero when there are no recommendations, although candidate eligibility separately requires positive coverage and at least one window.
-- **Window precision:** `fully safe windows / recommended windows`.
-- **Fully safe window rate:** the same binary-window quantity as window precision in this project. Both names are retained in new outputs for clarity.
-- **Safe opportunity kWh:** `(hvac_S + lig_S) * 0.25 h`, clipped at zero by the existing mapping, summed only for recommended intervals observed Empty. This is a load-opportunity proxy, not verified savings.
+- **Window precision:** `all-camera-label-empty windows / recommended windows`.
+- **All-camera-label-empty window rate:** the same binary-window quantity as window precision; legacy output columns retain `fully_safe` names for compatibility.
+- **Offline label-empty load-proxy overlap (kWh):** `(hvac_S + lig_S) * 0.25 h`, clipped at zero by the existing mapping, summed only for recommended intervals subsequently observed Empty. This is a processed load-proxy overlap, not verified savings or controllable energy.
 - **Recommendation coverage:** `recommended intervals / all intervals` across the non-overlapping midnight policy horizons.
 
 The implementation in `src/hybrid_analysis.py` confirms that `window_summary` increments `conflict_windows` whenever `actual_empty[day, start:end].all()` is false. Therefore any occupied interval makes the whole recommended window conflicting.
 
 ## Reproduction of reported current outcomes
 
-| Frozen strategy | Recommended windows | Fully safe windows | Conflict windows | Status |
+| Frozen strategy | Recommended windows | All-camera-label-empty windows | Conflict windows | Status |
 |---|---:|---:|---:|---|
 {verification_table}
 
@@ -772,7 +772,7 @@ The decision-optimal and 99%-floor candidates each have four conflict windows ev
 - Unique validation weight-threshold pairs: {details.get('base_rows', 'unavailable')} ({details.get('weights', 'unavailable')} weight vectors × {details.get('thresholds', 'unavailable')} thresholds).
 - Validation policy horizons: {details.get('validation_days', 'unavailable')} non-overlapping midnight horizons.
 - Best validation Empty AUPRC: {details.get('best_auprc', float('nan')):.10f}.
-- The validation grid includes interval counts, safe opportunity, coverage, and window counts. Validation predictions and the processed load table support per-window severity reconstruction.
+- The validation grid includes interval counts, offline label-empty load-proxy overlap, coverage, and window counts. Validation predictions and the processed load table support per-window severity reconstruction.
 - The current test export supports a retrospective diagnostic only. It is not a fresh untouched evaluation and is not accepted by the validation selection function.
 
 ## Inconsistencies or blockers
@@ -784,7 +784,7 @@ The decision-optimal and 99%-floor candidates each have four conflict windows ev
 
 def _candidate_validation_table(selected: pd.DataFrame) -> str:
     rows = [
-        "| W floor | Q floor | Weights S/L/T | Threshold | AUPRC | Interval conflict | Fully safe windows | Safe kWh | Coverage | Windows safe/total |",
+        "| W floor | Q floor | Weights S/L/T | Threshold | AUPRC | Interval conflict | All-label-empty windows | Proxy kWh | Coverage | Windows label-empty/total |",
         "|---:|---:|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     window = selected[selected["candidate_role"].eq("window_aware_validation_selected")]
@@ -802,7 +802,12 @@ def _candidate_validation_table(selected: pd.DataFrame) -> str:
     return "\n".join(rows)
 
 
-def _future_protocol(selected: pd.DataFrame) -> str:
+def _historical_frozen_candidate_protocol(selected: pd.DataFrame) -> str:
+    """Archived pre-audit protocol retained only to explain historical outputs.
+
+    It must not be used after the provenance-corrected empirical rerun because
+    that rerun changes source timing, deep initialization, and score outputs.
+    """
     primary = selected[selected["is_primary_future_challenger"].astype(bool)].iloc[0]
     q99 = selected[
         selected["candidate_role"].eq("window_aware_validation_selected")
@@ -894,6 +899,29 @@ The present validation study and current-test retrospective diagnostic cannot su
 """
 
 
+def _future_protocol(selected: pd.DataFrame) -> str:
+    """Write the current, non-promotional rerun handoff."""
+    return f"""# Historical frozen-candidate registry and empirical-rerun handoff
+
+> **Final-audit status:** the {len(selected)} frozen candidates in this saved-output search are historical exploratory diagnostics only. They cannot be promoted, carried into corrected retraining, or applied as the next empirical evaluation.
+
+## Why the old future protocol is superseded
+
+The final audit requires provenance-tagged source streams, explicit observation-end and post-bin issue timestamps, seed initialization before deep-model construction, a locked environment, full model retraining, and fresh validation-only selection. Those changes alter the score-generating experiment. Reusing historic saved-output weights or thresholds after them would be a new unvalidated choice, not a frozen confirmation.
+
+## Required corrected protocol
+
+1. Obtain and hash provenance-tagged streams; preserve source timezone, observation-end, bin-start, bin-end, effective issue, target-start, and target-end fields.
+2. Retrain every model under seed-before-construction and a locked software/hardware environment.
+3. Select model family, blend weights, score threshold, and any window rule only on a newly declared chronological validation period.
+4. Freeze that newly selected policy without inspecting the later evaluation period.
+5. Evaluate it once on a later untouched period or independent building, reporting post-bin forecast and policy scopes separately.
+6. Treat camera-label-empty processed-load-proxy overlap as offline accounting only; energy, comfort, controllability, calibrated-risk, and deployment claims require additional evidence.
+
+See paper/audits/rerun_manifest.md for the authoritative empirical-rerun checklist. The current test and the existing decision-aware/window-aware diagnostics remain retrospective and may not be used to retune or promote a candidate.
+"""
+
+
 def _scientific_report(
     selected: pd.DataFrame,
     diagnostic: pd.DataFrame,
@@ -920,6 +948,8 @@ def _scientific_report(
     loss100 = w80["validation_safe_opportunity_kwh"] - w100["validation_safe_opportunity_kwh"]
     return f"""# Window-aware decision search report
 
+> **Final-audit status:** exploratory offline, post-bin saved-output diagnostic. A 00:00 anchor is the left label of a completed [00:00, 00:15) input bin, so its effective boundary is 00:15. All "safe" legacy fields mean subsequently camera-label-empty processed-load-proxy overlap, not physical absence, calibrated risk, savings, or a deployable policy. The historical candidates cannot be promoted after the required empirical retraining.
+
 ## Material Passport
 
 - Origin Skill: experiment-agent
@@ -931,7 +961,7 @@ def _scientific_report(
 
 The validation-only study evaluated 8,547 unique weight-threshold pairs under 20 pre-specified window/AUPRC constraint combinations (170,940 constraint rows). The forecasting floors did not change the selected optimum at any window floor because every selected solution already exceeded 99% of the best validation AUPRC.
 
-The clearest validation compromise is the frozen `W_min=85%, Q=99%` challenger: `{w85.seasonal_weight:.2f}/{w85.lightgbm_weight:.2f}/{w85.transformer_weight:.2f}` at threshold `{w85.threshold:.3f}`. It produced validation AUPRC `{w85.validation_empty_auprc:.4f}`, interval conflict `{100 * w85.validation_interval_conflict_rate:.2f}%`, fully safe window rate `{100 * w85.validation_fully_safe_window_rate:.2f}%` ({int(w85.fully_safe_windows)}/{int(w85.recommended_windows)}), and `{w85.validation_safe_opportunity_kwh:.1f} kWh`. This choice was frozen before generating the current-test retrospective diagnostic.
+The clearest validation compromise is the historical `W_min=85%, Q=99%` challenger: `{w85.seasonal_weight:.2f}/{w85.lightgbm_weight:.2f}/{w85.transformer_weight:.2f}` at threshold `{w85.threshold:.3f}`. It produced validation AUPRC `{w85.validation_empty_auprc:.4f}`, interval conflict `{100 * w85.validation_interval_conflict_rate:.2f}%`, all-camera-label-empty window rate `{100 * w85.validation_fully_safe_window_rate:.2f}%` ({int(w85.fully_safe_windows)}/{int(w85.recommended_windows)}), and `{w85.validation_safe_opportunity_kwh:.1f} kWh of offline load-proxy overlap. This historical selection preceded the current-test retrospective diagnostic.
 
 No result deserves promotion or a headline change now. The enlarged search remains exploratory, and the current test period is already inspected.
 
@@ -946,27 +976,27 @@ Interval conflict pools intervals across all recommendations, whereas a window b
 - The decision-optimal candidate had `{int(decision_diag.conflict_intervals)}` occupied intervals among `{int(decision_diag.recommended_intervals)}` recommendations ({100 * decision_diag.interval_conflict_rate:.2f}%), distributed across `{int(decision_diag.conflict_windows)}` windows. One conflict window contained seven occupied intervals; three contained one each.
 - The 99%-floor candidate had `{int(floor_diag.conflict_intervals)}` occupied intervals among `{int(floor_diag.recommended_intervals)}` recommendations ({100 * floor_diag.interval_conflict_rate:.2f}%), also across `{int(floor_diag.conflict_windows)}` windows. One contained seven occupied intervals, one contained two, and two contained one each.
 
-Thus low interval conflict does not imply that almost every recommended window is fully safe.
+Thus low interval conflict does not imply that almost every recommended window is all-camera-label-empty.
 
 ## Opportunity cost of stronger window floors
 
 Using the common 99% AUPRC floor (the same optima occur for the other Q settings):
 
-- W>=80%: `{w80.validation_safe_opportunity_kwh:.1f} kWh`, `{100 * w80.validation_fully_safe_window_rate:.1f}%` fully safe windows.
+- W>=80%: `{w80.validation_safe_opportunity_kwh:.1f} kWh`, `{100 * w80.validation_fully_safe_window_rate:.1f}%` all-camera-label-empty windows.
 - W>=85%: `{w85.validation_safe_opportunity_kwh:.1f} kWh`, a loss of `{w80.validation_safe_opportunity_kwh - w85.validation_safe_opportunity_kwh:.1f} kWh` versus W>=80%.
 - W>=90%: `{w90.validation_safe_opportunity_kwh:.1f} kWh`, a loss of `{loss90:.1f} kWh` ({100 * loss90 / w80.validation_safe_opportunity_kwh:.1f}%).
-- W>=95%: `{w95.validation_safe_opportunity_kwh:.1f} kWh`, a loss of `{loss95:.1f} kWh` ({100 * loss95 / w80.validation_safe_opportunity_kwh:.1f}%). The discrete optimum is actually 100% fully safe.
+- W>=95%: `{w95.validation_safe_opportunity_kwh:.1f} kWh`, a loss of `{loss95:.1f} kWh` ({100 * loss95 / w80.validation_safe_opportunity_kwh:.1f}%). The discrete optimum is actually 100% all-camera-label-empty.
 - W=100%: `{w100.validation_safe_opportunity_kwh:.1f} kWh`, a loss of `{loss100:.1f} kWh` ({100 * loss100 / w80.validation_safe_opportunity_kwh:.1f}%). It is the same discrete candidate as W>=95%.
 
-Relative to the unconstrained decision candidate's `{decision.validation_safe_opportunity_kwh:.1f} kWh`, W>=90% gives up `{decision.validation_safe_opportunity_kwh - w90.validation_safe_opportunity_kwh:.1f} kWh`, and the fully safe candidate gives up `{decision.validation_safe_opportunity_kwh - w100.validation_safe_opportunity_kwh:.1f} kWh`.
+Relative to the unconstrained decision candidate's `{decision.validation_safe_opportunity_kwh:.1f} kWh`, W>=90% gives up `{decision.validation_safe_opportunity_kwh - w90.validation_safe_opportunity_kwh:.1f} kWh`, and the all-camera-label-empty candidate gives up `{decision.validation_safe_opportunity_kwh - w100.validation_safe_opportunity_kwh:.1f} kWh`.
 
 ## Interpretation of the existing 99%-AUPRC-floor candidate
 
-The existing 99%-floor candidate has only `{100 * floor99.validation_fully_safe_window_rate:.1f}%` fully safe validation windows ({int(floor99.fully_safe_windows)}/{int(floor99.recommended_windows)}), so it fails even the lowest new 80% window floor. Its retrospective current-test rate is `{100 * floor_diag.fully_safe_window_rate:.1f}%`. Its high opportunity remains descriptively interesting, but it is not attractive under the newly frozen window-aware safety rule.
+The existing 99%-floor candidate has only `{100 * floor99.validation_fully_safe_window_rate:.1f}%` all-camera-label-empty validation windows ({int(floor99.fully_safe_windows)}/{int(floor99.recommended_windows)}), so it fails even the lowest new 80% window floor. Its retrospective current-test rate is `{100 * floor_diag.fully_safe_window_rate:.1f}%`. Its high offline proxy overlap remains descriptively interesting, but it is not attractive under the historical window-aware rule.
 
 ## Operational compromise
 
-The W>=85%, Q=99% challenger is the clearest validation compromise: it raises the fully safe-window rate by `{100 * (w85.validation_fully_safe_window_rate - canonical.validation_fully_safe_window_rate):+.1f}` percentage points and safe opportunity by `{w85.validation_safe_opportunity_kwh - canonical.validation_safe_opportunity_kwh:+.1f} kWh` versus the canonical validation reference, while keeping interval conflict below 10% and AUPRC above 99% of the validation best. W>=90% is safer at the window level but no longer exceeds canonical validation opportunity; W>=95%/100% is highly conservative with only `{int(w100.recommended_windows)}` recommended windows.
+The W>=85%, Q=99% challenger is the clearest validation compromise: it raises the all-camera-label-empty-window rate by `{100 * (w85.validation_fully_safe_window_rate - canonical.validation_fully_safe_window_rate):+.1f}` percentage points and offline load-proxy overlap by `{w85.validation_safe_opportunity_kwh - canonical.validation_safe_opportunity_kwh:+.1f} kWh` versus the canonical validation reference, while keeping interval conflict below 10% and AUPRC above 99% of the validation best. W>=90% has a higher label-empty window rate but no longer exceeds canonical validation proxy overlap; W>=95%/100% is highly conservative with only `{int(w100.recommended_windows)}` recommended windows.
 
 This is a validation-based compromise, not evidence of deployment safety.
 
@@ -974,14 +1004,14 @@ This is a validation-based compromise, not evidence of deployment safety.
 
 `results/window_aware_current_test_diagnostic.csv` evaluates every unique frozen definition only after selection. It is explicitly not a fresh untouched evaluation, and its results did not alter the W>=85%, Q=99% rule, any weights, or any threshold.
 
-For transparency, the frozen primary challenger produced retrospective point estimates of `{diag_index.loc['window_aware_definition_02', 'empty_auprc']:.4f}` Empty AUPRC, `{100 * diag_index.loc['window_aware_definition_02', 'interval_conflict_rate']:.2f}%` interval conflict, `{100 * diag_index.loc['window_aware_definition_02', 'fully_safe_window_rate']:.2f}%` fully safe windows ({int(diag_index.loc['window_aware_definition_02', 'fully_safe_windows'])}/{int(diag_index.loc['window_aware_definition_02', 'recommended_windows'])}), and `{diag_index.loc['window_aware_definition_02', 'safe_opportunity_kwh']:.1f} kWh`. These already-inspected outcomes cannot support promotion or further adaptation.
+For transparency, the historical primary challenger produced retrospective point estimates of `{diag_index.loc['window_aware_definition_02', 'empty_auprc']:.4f}` Empty AUPRC, `{100 * diag_index.loc['window_aware_definition_02', 'interval_conflict_rate']:.2f}%` interval conflict, `{100 * diag_index.loc['window_aware_definition_02', 'fully_safe_window_rate']:.2f}%` all-camera-label-empty windows ({int(diag_index.loc['window_aware_definition_02', 'fully_safe_windows'])}/{int(diag_index.loc['window_aware_definition_02', 'recommended_windows'])}), and `{diag_index.loc['window_aware_definition_02', 'safe_opportunity_kwh']:.1f} kWh of offline load-proxy overlap. These already-inspected outcomes cannot support promotion or further adaptation.
 
 ## Robustness and headline decision
 
 - **Headline:** unchanged. The canonical primary remains the official reference.
 - **Confidence:** caution. Window outcomes are based on 39 validation and 43 already-inspected test horizons; windows are clustered within days, and this expanded search adds selection multiplicity.
 - **Required before promotion:** a new chronological period, fixed candidate application, paired daily-block uncertainty, day-influence analysis, and mechanical application of every gate in `reports/future_untouched_evaluation_protocol.md`.
-- **Claims boundary:** safe opportunity is not verified energy savings, and observed window safety is not a safety guarantee.
+- **Claims boundary:** offline label-empty load-proxy overlap is not verified energy savings, and observed label-empty windows are not a safety guarantee.
 
 ## Statistical-integrity and fallacy scan
 
@@ -1049,7 +1079,7 @@ def make_validation_tradeoff(
             edgecolor="#6F4A8E",
             linewidth=1.3,
             zorder=6,
-            label="Frozen W>=85%, Q=99% challenger" if primary else None,
+            label="Historical W>=85%, Q=99% diagnostic" if primary else None,
         )
         ax.annotate(
             f"W>={floor_label}",
@@ -1060,9 +1090,9 @@ def make_validation_tradeoff(
         )
     ax.set_xlim(-0.02, 1.03)
     ax.xaxis.set_major_formatter(lambda value, _: f"{100 * value:.0f}%")
-    ax.set_xlabel("Validation fully safe window rate")
-    ax.set_ylabel("Validation safe opportunity (kWh)")
-    ax.set_title("Validation-only window-safety and opportunity tradeoff")
+    ax.set_xlabel("Validation all-camera-label-empty window rate")
+    ax.set_ylabel("Validation label-empty load-proxy overlap (kWh)")
+    ax.set_title("Validation-only window diagnostic")
     ax.legend(fontsize=8, loc="best")
     fig.text(
         0.5,
@@ -1095,8 +1125,12 @@ def make_interval_vs_window_safety(selected: pd.DataFrame, path: Path) -> None:
         100 * plot["validation_fully_safe_window_rate"],
         plot["validation_safe_opportunity_kwh"],
     ]
-    titles = ["Interval conflict", "Fully safe windows", "Safe opportunity"]
-    ylabels = ["Validation conflict (%)", "Validation fully safe rate (%)", "Validation kWh"]
+    titles = ["Interval conflict", "All-camera-label-empty windows", "Offline proxy overlap"]
+    ylabels = [
+        "Validation conflict (%)",
+        "Validation all-label-empty rate (%)",
+        "Validation proxy overlap (kWh)",
+    ]
     for axis, value, title, ylabel in zip(axes, values, titles, ylabels):
         bars = axis.bar(x, value, color=colors)
         axis.set_title(title)
@@ -1104,7 +1138,7 @@ def make_interval_vs_window_safety(selected: pd.DataFrame, path: Path) -> None:
         axis.set_xticks(x, labels=labels, rotation=25, ha="right", fontsize=8)
         axis.bar_label(bars, fmt="%.1f", fontsize=8)
     axes[0].axhline(10, color="black", linestyle="--", linewidth=1.1)
-    fig.suptitle("Validation-only interval and window safety are complementary")
+    fig.suptitle("Validation-only interval and all-label-empty-window diagnostics")
     fig.text(
         0.5,
         0.01,
@@ -1155,7 +1189,7 @@ def make_conflict_severity(
     fig.text(
         0.5,
         0.01,
-        "Marker size represents controllable-load kWh during occupied conflict intervals; validation data only.",
+        "Marker size represents processed-load-proxy kWh during occupied conflict intervals; validation data only.",
         ha="center",
         fontsize=9,
     )
@@ -1175,12 +1209,6 @@ def run_window_aware_decision_search(
     figures_dir = Path(figures_dir)
     reports_dir = Path(reports_dir)
     reports_dir.mkdir(parents=True, exist_ok=True)
-
-    audit_path = reports_dir / "window_aware_decision_search_audit.md"
-    audit_text, sufficient = _audit_report(results_dir)
-    audit_path.write_text(audit_text, encoding="utf-8")
-    if not sufficient:
-        raise WindowAwareInputBlocker(f"Window audit failed; see {audit_path}")
 
     # Validation-only selection: this path rejects any input column containing "test".
     base_raw = _read_csv(results_dir / "decision_aware_joint_weight_threshold_grid.csv")
@@ -1206,8 +1234,21 @@ def run_window_aware_decision_search(
     window_candidates = all_constraint_candidates[
         all_constraint_candidates["auprc_floor_label"].eq("99pct")
     ].reset_index(drop=True)
+
+    # Window-aware candidates are now frozen from the validation grid.  The
+    # historical decision-search references are added only after that point;
+    # their stored test diagnostics cannot influence this selection.
     prior_candidates = _read_csv(results_dir / "decision_aware_joint_selected_candidates.csv")
     selected = combine_selected_and_references(window_candidates, prior_candidates)
+
+    # Run the complete audit only after every new candidate is frozen.  The
+    # audit reproduces existing current-test diagnostics, but cannot alter the
+    # validation-selected window-aware definitions above.
+    audit_path = reports_dir / "window_aware_decision_search_audit.md"
+    audit_text, sufficient = _audit_report(results_dir)
+    audit_path.write_text(audit_text, encoding="utf-8")
+    if not sufficient:
+        raise WindowAwareInputBlocker(f"Window audit failed; see {audit_path}")
 
     grid_path = results_dir / "window_aware_joint_selection_grid.csv"
     selected_path = results_dir / "window_aware_selected_candidates.csv"

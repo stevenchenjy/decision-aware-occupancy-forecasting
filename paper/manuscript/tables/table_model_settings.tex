@@ -1,0 +1,17 @@
+\begin{table*}[!t]
+\caption{Stored model specifications and information availability. Saved non-deterministic outputs average historical runs labelled 42, 43, and 44; deep-module construction preceded seed reset, so this is not a controlled seed-dispersion study.}
+\label{tab:model-settings}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{p{0.20\textwidth}p{0.38\textwidth}p{0.34\textwidth}}
+\toprule
+Model & Inputs and training set & Stored implementation setting \\
+\midrule
+Historical average & Known target weekday and 15-min slot; train partition only & Deterministic mean occupied label by weekday/time slot, with the train mean as fallback \\
+LightGBM and random forest & Occupancy/count lags and rolling summaries; completed-input-bin sensor values; known-future calendar features; at most 200,000 stratified training rows per seed & LightGBM: 320 trees, learning rate 0.05, 31 leaves, minimum child 50, column fraction 0.85, no row bagging (\texttt{subsample}=1, \texttt{subsample\_freq}=0). Random forest: 70 trees, depth 14, minimum leaf 20, square-root feature sampling \\
+Direct linear occupancy baseline (legacy \texttt{DLinear}) & Past 96 occupied indicators & One direct 96-to-96 linear mapping; no trend/seasonal decomposition; maximum 12 epochs, validation-loss early stopping with patience 4 \\
+Compact Transformer encoder (legacy \texttt{Original Transformer}) & Past 96 occupancy/count, completed-input-bin sensor, and calendar values; known-future calendar values & One encoder layer, 32-dimensional state, 4 heads, 0.1 dropout; known-future calendar projection; AdamW at $10^{-3}$; maximum 12 epochs and validation-loss early stopping with patience 4 \\
+\bottomrule
+\end{tabular}
+\end{table*}

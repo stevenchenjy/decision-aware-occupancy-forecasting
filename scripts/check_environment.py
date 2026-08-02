@@ -87,7 +87,7 @@ def main() -> int:
             print(f"  - {failure}")
         return 1
 
-    print("\nEnvironment check passed.")
+    print("\nDependency import check passed. This is not an environment lock or an empirical reproducibility certificate.")
     return 0
 
 

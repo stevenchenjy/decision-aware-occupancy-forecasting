@@ -1,5 +1,7 @@
 # Current Result Consistency Audit
 
+> **Historical audit superseded for final wording by [final_self_audit_2026-08-01.md](final_self_audit_2026-08-01.md).** Numerical reconciliation remains useful; post-bin timing/source-provenance limits are authoritative in the final audit.
+
 Audit date: 2026-07-10
 
 ## Outcome

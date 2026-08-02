@@ -1,0 +1,17 @@
+\section{Experimental Design}
+
+\subsection{Evaluation Scopes and Metrics}
+
+Forecast metrics use all overlapping rolling test forecasts. The primary metric is Empty-class area under the precision-recall curve (AUPRC), which is appropriate to report alongside other measures for an imbalanced binary class~\cite{SaitoRehmsmeier2015}. Empty precision, recall, and F1 in the model-comparison table use a separate $p_{\mathrm{Empty}}\geq0.5$ descriptive score cutoff. They do \emph{not} use the operating-policy threshold in Eq.~\eqref{eq:conflict}. This distinction prevents a descriptive classifier cutoff from being mistaken for a selected operating rule.
+
+Policy metrics use a different, non-overlapping scope. They use 39 validation and 43 test midnight-labelled 96-step horizons. The latter have an effective 00:15 issue boundary under the completed-bin convention in Section~III. For every model, the reported threshold is selected only from validation policy horizons. The fixed test policy reports recommended, camera-label-safe, and conflict intervals, stable recommended and camera-label-safe windows, coverage, and Eq.~\eqref{eq:opportunity}. The temporal split and fixed-policy evaluation follow the general need to preserve temporal order when estimating time-series performance~\cite{Cerqueira2020}; they do not turn the cleaned source release into an independently verified real-time data stream.
+
+\subsection{Uncertainty, Diagnostics, and Reproducibility}
+
+Uncertainty is quantified with 2,000 paired daily-block bootstrap resamples of the 43 test policy horizons while holding model weights and thresholds fixed. The resulting intervals are conditional on the selected model and policy. They do not account for uncertainty introduced by model selection. Brier score, log loss, and 10-bin quantile expected calibration error are reported as held-out diagnostics of the uncalibrated scores; no post-hoc calibrator is fitted. A sensitivity analysis varies the minimum window length from 15 min to 4 h while preserving the validation-selected threshold.
+
+The saved-output path is reproducible without raw data: it validates aligned prediction exports, repeats the validation-only blend and threshold selection, and regenerates canonical result artifacts. It is not an end-to-end empirical retraining path. The raw acquisition streams, source-side imputation lineage, and source timestamp convention are absent from the repository, and the deep-model initialization ordering must be corrected before a fully controlled retraining claim. Repository tests check split separation, timestamp offsets, convex-weight selection, policy accounting, and the requirement that the two exploratory selection routines freeze candidates before their test diagnostics are read.
+
+\subsection{Primary and Exploratory Analyses}
+
+The canonical analysis is the validation-selected primary hybrid in Eq.~\eqref{eq:blend} and the same protocol applied to fixed reference models. The repository also contains a test-ranked balanced hybrid, an expanded joint weight-threshold search, and a window-aware search. None replaces the canonical primary result. The test-ranked model is excluded from the main analysis, while the joint and window-aware candidates are reported only as status-controlled exploratory material in Appendix~A. This separation is necessary because the expanded candidates use an enlarged validation search surface and their historical test diagnostics are not fresh, untouched confirmation.

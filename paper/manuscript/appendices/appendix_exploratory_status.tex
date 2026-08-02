@@ -1,0 +1,9 @@
+\section{Extended Results and Exploratory-Analysis Status}
+
+Table~\ref{tab:extended-forecasts} preserves the complete canonical comparison set. The test-ranked balanced hybrid is not shown because its architecture was selected after inspection of test ranking and is supplementary by definition. The primary hybrid remains the nominal validation-selected canonical model in the manuscript.
+
+\input{tables/table_extended_forecasts}
+
+The repository additionally contains a joint weight-threshold search over 231 convex blend weights and 37 score thresholds (8,547 validation pairs) and a window-aware search over the resulting validation surface. After the present code audit, both routines freeze validation candidates before loading their test diagnostics. They nevertheless enlarge the search surface, use historical results whose test period is no longer fresh confirmation, and inherit the post-bin/source-provenance limits of the base exports. The decision-optimal current-test point estimates (623.5 and 650.4~kWh for two joint-search variants) and the window-aware challenger's current-test point estimate (511.6~kWh with 2.49\% interval conflict) are therefore retrospective diagnostics, not headline efficacy results.
+
+\paragraph{Status controls.} The test-ranked balanced hybrid is supplementary only because its architecture family was selected after inspection of test ranking. The joint search is exploratory and cannot replace the canonical primary policy. The window-aware candidate is a frozen future challenger, not a confirmed result. None of these searches trains a downstream decision loss. A future evaluation may use a frozen candidate and its declared constraints on a later untouched chronological period, ideally with control, comfort, and counterfactual energy measurements.

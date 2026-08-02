@@ -1,147 +1,51 @@
-# Decision-Aware Occupancy Forecasting Research Prototype
+# Building 59 Occupancy Forecasting: Offline Post-Bin Case Study
 
-This repository evaluates day-ahead occupancy forecasts for identifying stable empty windows and estimating offline safe shiftable-load opportunity under occupancy-conflict constraints.
+## Current scientific status
 
-The strongest current conclusion concerns a validation-selected probability hybrid:
+**Audit verdict: requires empirical rerun.** The committed saved outputs are internally reproducible as an offline, post-bin analysis. They do not establish a real-time day-ahead system or a prospective operational recommendation.
 
-`seasonal schedule prior + LightGBM + Transformer -> validation-selected risk policy`
+Each stored 15-min anchor label 't' is the left label of the completed input bin '[t, t+15 min)'. Because the models use that anchor record, the effective availability boundary is 't+15 min'; a policy anchor labelled '00:00' is therefore treated as available at '00:15', with target bins through the next '00:15' exclusive. The imported input is the cleaned LBNL release, not the original acquisition stream. Upstream imputation lineage and source timestamp semantics are unavailable, so row-order checks after import do not prove causal source availability.
 
-It is an offline evaluation framework, not a deployed controller or verified energy-savings study.
+The authoritative self-audit is [reports/final_self_audit_2026-08-01.md](reports/final_self_audit_2026-08-01.md). It supersedes earlier positive-integration wording where they conflict.
 
-## Main result
+## What the saved artifacts support
 
-The primary `Hybrid Seasonal-GBDT-Transformer` combines:
+- Across **388,032 overlapping test forecast rows from 4,042 anchors**, the nominal validation-selected primary blend has Empty AUPRC **0.8514**; Historical Average has **0.8497** and LightGBM **0.8382**.
+- Across **43 non-overlapping midnight-labelled test policy horizons** (effective boundary 00:15), its fixed score rule recommends **259** intervals; all are subsequently camera-label-empty, forming **14** label-safe windows and coinciding with **490.1 kWh** of processed HVAC-plus-lighting proxy.
+- LightGBM coincides with **493.9 kWh** but has **11/265 (4.15%)** camera-label conflicts.
+- The offline opportunity is not measured saving, controllable capacity, comfort preservation, physical absence, or controller performance.
+- The stored outputs are bounded Empty-class scores, not calibrated probabilities. Brier, log loss, and ECE are diagnostics only.
+- The reported blend and threshold are nominal validation selections, not uniquely stable optima. See 'results/validation_selection_stability.csv'.
 
-- 15% train-only Historical Average Empty probability
-- 60% LightGBM Empty probability
-- 25% original Transformer Empty probability
+## Model terminology
 
-Those weights are the highest-validation-AUPRC point on a declared 0.05 simplex grid. The 10% policy threshold (`0.875`) is then selected on validation midnight forecasts by maximizing safe opportunity subject to validation occupancy conflict `<=10%`.
-
-On 43 held-out test days:
-
-- Empty AUPRC: `0.8514`
-- test conflict rate: `0/259 = 0.00%` observed recommended intervals
-- safe opportunity: `490.1 kWh`
-- recommendation coverage: `6.27%`
-- recommended/safe windows: `14/14`
-- safe opportunity per day: `11.40 kWh/day`
-
-The point AUPRC is slightly above Historical Average (`0.8497`) and LightGBM (`0.8382`), but paired daily-block confidence intervals for those differences include zero. The observed 0% conflict is specific to this test period and is not a universal safety guarantee.
-
-## Exploratory decision-aware extensions
-
-The canonical model above is unchanged. Two later validation-only searches ask a
-different question: which already-saved probability blend and operating threshold
-identify more safe load-proxy opportunity while retaining explicit forecasting and
-occupancy-conflict safeguards?
-
-- **Joint weight-threshold search:** evaluates all 231 non-negative
-  Seasonal/LightGBM/Transformer weight vectors on the 0.05 simplex against 37
-  thresholds, for 8,547 validation pairs. It maximizes validation safe opportunity
-  subject to interval conflict `<=10%`, positive coverage, and at least one stable
-  one-hour window. A 99%-of-best-validation-AUPRC variant limits forecast-quality
-  loss.
-- **Window-aware search:** applies predeclared AUPRC and fully-safe-window floors
-  to the same frozen validation surface. Its primary future challenger is
-  `0.40/0.40/0.20` at threshold `0.850`, selected under a fully safe window floor
-  of 85% and an AUPRC floor of 99%.
-
-The joint-search challengers produced larger safe-opportunity point estimates on
-the already-inspected current test, but also about 3% interval conflict versus zero
-observed conflict for the canonical primary. These candidates remain exploratory:
-the current test results cannot be used to promote or retune them, and no new
-untouched evaluation period is included in this repository.
-
-Start with the [joint-search report](reports/decision_aware_joint_search_report.md),
-the [window-aware report](reports/window_aware_decision_search_report.md), and the
-[future untouched-evaluation protocol](reports/future_untouched_evaluation_protocol.md).
-
-## Model roles
-
-| Family | Role |
+| Saved identifier | Paper-facing description |
 |---|---|
-| Historical Average | Train-only weekday/time-slot schedule baseline; defines the seasonal prior |
-| LightGBM | Nonlinear tabular reference and strongest established opportunity policy |
-| Random Forest, original Transformer, DLinear | Original comparison models |
-| Seasonal-Transformer Blend | Validation-selected two-way intermediate (`0.54/0.46`) |
-| Hybrid Seasonal-GBDT-Transformer | Validation-selected primary hybrid (`0.15/0.60/0.25`) |
-| Exploratory Hybrid Balanced Tree-Deep | Test-ranked supplementary candidate (`0.8554` test AUPRC); not a selected deployment policy |
-| Decision-aware joint hybrids | Validation-selected exploratory challengers; not canonical |
-| Window-aware hybrid | Frozen future-evaluation challenger (`0.40/0.40/0.20 @ 0.850`); current-test values are retrospective |
+| 'Original Transformer' | Compact encoder-only Transformer with a known-future calendar projection |
+| 'DLinear' | Direct linear occupancy-history baseline; not the decomposition-based DLinear architecture |
+| 'Hybrid Seasonal-GBDT-Transformer' | Nominal validation-selected primary score blend: Historical 0.15 / LightGBM 0.60 / Transformer 0.25 |
 
-## Start here
+The deep-model runs carry labels 42, 43, and 44, but model construction preceded seed reset. Their ensemble is factual saved-output evidence, not a controlled seed-dispersion study.
 
-1. [RESULTS_SUMMARY.md](RESULTS_SUMMARY.md) — canonical results, differences, and uncertainty.
-2. [New artifact audit](reports/new_artifact_integration_audit.md) — provenance and experimental-validity audit.
-3. [Integration report](reports/new_artifact_integration_report.md) — integration changes and presentation paths.
-4. [Professor presentation guide](reports/professor_presentation_guide.md) — recommended main/appendix artifacts and speaking notes.
-5. [Current consistency audit](reports/current_result_consistency_audit.md) — cross-file numerical and claim consistency checks.
-6. [No-raw-data upgrade report](reports/no_raw_data_upgrade_report.md) — upgrades completed from saved outputs and remaining raw-data blockers.
-7. [VALIDITY_CHECKLIST.md](VALIDITY_CHECKLIST.md) — leakage and selection checks.
-8. [CLAIMS_AND_LIMITATIONS.md](CLAIMS_AND_LIMITATIONS.md) — supported wording and claim boundaries.
-9. [REPRODUCING.md](REPRODUCING.md) — raw-data, saved-output, testing, and figure commands.
-10. [Decision-aware joint-search report](reports/decision_aware_joint_search_report.md) — validation-only joint weight-threshold results.
-11. [Window-aware search report](reports/window_aware_decision_search_report.md) — stable-window constraints and the frozen future challenger.
+## Reproduce the auditable saved-output path
 
-## Canonical outputs
+    python3 -m pytest -q
+    python3 scripts/generate_hybrid_artifacts.py
+    python3 scripts/audit_validation_selection_stability.py
+    python3 scripts/run_decision_aware_joint_search.py
+    python3 scripts/run_window_aware_decision_search.py
+    python3 paper/scripts/generate_paper_figures.py
 
-- Eight-model metrics: `results/canonical_model_comparison.csv`
-- Validation-selected 10% policies: `results/canonical_policy_10pct.csv`
-- Hybrid weights and provenance: `results/hybrid_candidate_registry.csv`
-- Primary-hybrid component lineage: `results/hybrid_lineage.csv`
-- Validation weight searches: `results/hybrid_seasonal_transformer_weight_search.csv` and `results/hybrid_primary_weight_search.csv`
-- Validation/test risk sweeps: `results/hybrid_risk_opportunity_threshold_sweeps.csv`
-- Stable-window sensitivity: `results/hybrid_stable_window_sensitivity.csv`
-- Daily-block uncertainty: `results/hybrid_uncertainty_daily_block_bootstrap.csv`
-- Compact professor-facing uncertainty: `results/canonical_uncertainty_summary.csv`
-- Calibration: `results/hybrid_calibration_summary.csv`
-- Hybrid predictions: `predictions/hybrid_ensemble_validation_predictions.csv` and `predictions/hybrid_ensemble_test_predictions.csv`
+These commands regenerate saved-output artifacts; they do **not** retrain base models from empirical source streams. See [REPRODUCING.md](REPRODUCING.md) and the [rerun manifest](paper/audits/rerun_manifest.md).
 
-Established base results remain in place; the hybrid integration does not silently replace them.
+## Evidence layout
 
-## Key figures
+- 'results/' and 'predictions/' — canonical saved forecasts, policy accounting, timing semantics, and validation-stability artifact.
+- 'src/' and 'scripts/' — preprocessing, models, canonical analysis, and reproducibility checks.
+- 'paper/' — IEEE manuscript, manuscript figures, audits, and submission handoff.
+- 'reports/final_self_audit_2026-08-01.md' — final code/results/paper consistency audit.
+- 'reports/' — historical reports and current exploratory-search reports; use the final self-audit to interpret historical claims.
 
-- `figures/canonical_empty_metrics_comparison.png`
-- `figures/canonical_policy_10pct_comparison.png`
-- `figures/risk_opportunity_validation_vs_test_diagnostic.png`
-- `figures/hybrid_stable_window_sensitivity.png`
-- `figures/hybrid_lightgbm_historical_same_day.png`
-- `figures/transformer_old_vs_new.png`
-- `figures/hybrid_reliability_analysis.png`
+## Required empirical next step
 
-## Exploratory decision-aware figures
-
-- `figures/decision_aware_joint_validation_frontier.png`
-- `figures/decision_aware_joint_test_comparison.png`
-- `figures/window_aware_validation_tradeoff.png`
-
-## Repository layout
-
-- `src/` — reusable data, model, evaluation, policy, and hybrid-analysis code.
-- `scripts/run_all.py` — full raw-data training/evaluation path.
-- `scripts/generate_figures.py` — regenerate base and hybrid figures from saved results.
-- `scripts/generate_hybrid_artifacts.py` — regenerate hybrid weights, tables, uncertainty, predictions, and figures without retraining.
-- `results/`, `figures/`, `predictions/` — canonical outputs.
-- `reports/` — audit and integration reports.
-- `archive/new_staging_2026-07/` — staged notebook/script/result provenance.
-- `figures/archive/new_staging_2026-07/` — staged singular/plural figure trees.
-- `NEW/README.md` — closed staging manifest.
-
-## Quick reproduction from saved outputs
-
-```bash
-python -m pytest -q
-python scripts/generate_hybrid_artifacts.py
-python scripts/generate_figures.py
-```
-
-Full model retraining requires the external Dryad raw data described in `DATA.md`.
-
-## Interpretation boundary
-
-Safe opportunity is the recorded `hvac_S + lig_S` load during recommended intervals that were actually empty:
-
-`kWh = max(hvac_S + lig_S, 0) * 0.25 hour`
-
-This is not verified savings, comfort preservation, carbon reduction, causal impact, or production readiness.
+Acquire source streams with observation-end timestamps and imputation lineage; define and test the bin-end issue convention; correct deep seed initialization before model construction; lock the environment; retrain and select only on training/validation; then evaluate once on a later untouched period or independent building. A simulator or intervention with equipment and comfort constraints is additionally required for energy or control claims.

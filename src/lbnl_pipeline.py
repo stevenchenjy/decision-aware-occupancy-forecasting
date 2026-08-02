@@ -1,9 +1,11 @@
-"""Python-first experiment pipeline for the LBNL occupancy forecasting study.
+"""Legacy cleaned-release replay for the LBNL occupancy forecasting study.
 
 This module was extracted from ``LBNL_occupancy_forecasting_main.ipynb`` so the
 notebook can remain a report while the executable research logic lives in
 ``src/``. The execution order and numerical operations intentionally mirror the
-original notebook.
+original notebook. It is not a provenance-qualified empirical rerun: source
+observation-end timestamps, source-side imputation lineage, and corrected deep
+seed initialization are outside this legacy path.
 """
 
 from __future__ import annotations
@@ -84,8 +86,9 @@ def display(*args, **kwargs):
 @dataclass
 class Config:
     data_dir: str = 'doi_10_7941_D1N33Q__v20220202/Building_59/Bldg59_clean data'
-    figure_dir: str = 'figures'
-    result_dir: str = 'results'
+    figure_dir: str = 'runs/legacy_cleaned_replay/figures'
+    result_dir: str = 'runs/legacy_cleaned_replay/results'
+    prediction_dir: str = 'runs/legacy_cleaned_replay/predictions'
     raw_timestamp_timezone: str = 'UTC'
     local_timezone: str = 'America/Los_Angeles'
     freq: str = '15min'
@@ -126,9 +129,9 @@ def read_timeseries(path, cfg):
     dt = pd.to_datetime(raw['date'], errors='coerce')
     raw = raw.loc[dt.notna()].copy()
     dt = dt.loc[dt.notna()]
-    # The cleaned LBNL streams are stored as naive timestamps. Solar radiation peaks only
-    # after interpreting them as UTC and converting to Berkeley local time, so all streams
-    # are parsed as UTC and then converted to Pacific Time for feature generation.
+    # This is an unverified working assumption: solar radiation peaks look
+    # plausible after UTC-to-Pacific conversion, but the source documentation
+    # does not explicitly confirm the raw timestamp timezone.
     raw['date'] = dt.dt.tz_localize(cfg.raw_timestamp_timezone).dt.tz_convert(cfg.local_timezone)
     for col in raw.columns:
         if col != 'date':
@@ -136,7 +139,11 @@ def read_timeseries(path, cfg):
     return raw.sort_values('date')
 
 def resample_mean(df, freq):
-    return df.set_index('date').sort_index().resample(freq).mean()
+    # Make pandas' default bin convention explicit.  A row labelled ``t``
+    # summarizes the left-closed interval [t, t + freq).  Forecast code that
+    # consumes this row must therefore treat the effective issue boundary as
+    # the *end* of the bin, not as the label t itself.
+    return df.set_index('date').sort_index().resample(freq, closed='left', label='left').mean()
 
 def make_timezone_audit(cfg):
     p = Path(cfg.data_dir) / 'site_weather.csv'
@@ -164,13 +171,13 @@ def make_timezone_audit(cfg):
         },
         {
             'check': 'solar_radiation_peak_test',
-            'status': 'supports_raw_utc',
-            'evidence': f"Raw timestamp solar peak is around hour {int(raw_peak['hour'])}; after UTC->Pacific conversion it peaks around local hour {int(local_peak['hour'])}, consistent with daylight.",
+            'status': 'inferred_not_documented',
+            'evidence': f"Raw timestamp solar peak is around hour {int(raw_peak['hour'])}; after UTC->Pacific conversion it peaks around local hour {int(local_peak['hour'])}, consistent with daylight but not source-confirmed.",
         },
         {
             'check': 'time_feature_basis',
-            'status': 'pass',
-            'evidence': 'All hour/day/weekend/holiday features are generated after UTC->Pacific conversion.',
+            'status': 'working_assumption_applied',
+            'evidence': 'All hour/day/weekend/holiday features are generated after the assumed UTC->Pacific conversion; source timezone provenance remains unresolved.',
         },
         {
             'check': 'raw_hour_10_12_empty_anomaly',
@@ -209,8 +216,8 @@ def prepare_dataset(cfg):
     occ_cols = [c for c in occ_raw.columns if c.startswith('occ_')]
     occ_raw['occ_count'] = occ_raw[occ_cols].sum(axis=1, min_count=1)
     occ = pd.DataFrame({
-        'occ_count_mean': occ_raw['occ_count'].resample(cfg.freq).mean(),
-        'occ_count_max': occ_raw['occ_count'].resample(cfg.freq).max(),
+        'occ_count_mean': occ_raw['occ_count'].resample(cfg.freq, closed='left', label='left').mean(),
+        'occ_count_max': occ_raw['occ_count'].resample(cfg.freq, closed='left', label='left').max(),
     })
     occ['occupied'] = (occ['occ_count_max'] > cfg.occupied_count_threshold).astype(float)
     occ['empty'] = 1.0 - occ['occupied']
@@ -275,9 +282,10 @@ def prepare_dataset(cfg):
     protected = {'occupied', 'empty', 'occ_count_mean', 'occ_count_max'}
     feature_cols = [c for c in features.columns if c not in protected]
     missing_before_fill = features[feature_cols].isna().mean().rename('missing_before_fill')
-    # Leakage-safe preprocessing: no interpolation or backward fill. Sensor/load values
-    # are carried forward from the past only; leading missing values use a fixed 0.0
-    # constant so validation/test statistics are never used for imputation.
+    # Post-import row-order preprocessing: no new interpolation or backward fill.
+    # Sensor/load values are carried forward from preceding rows only; leading
+    # missing values use a fixed 0.0 constant.  This cannot establish causal
+    # provenance for any imputation already present in the imported clean release.
     features[feature_cols] = features[feature_cols].ffill().fillna(0.0)
 
     predictor_sensor_cols = [c for c in [
@@ -293,6 +301,7 @@ def prepare_dataset(cfg):
         'start_local': features.index.min(),
         'end_local': features.index.max(),
         'frequency': cfg.freq,
+        'resample_bin_convention': 'left-closed, left-labelled [t, t + 15 min); input-bin values are available only at bin close',
         'timezone': cfg.local_timezone,
         'target_occupied_definition': f'occupied=1 if max south-zone camera count > {cfg.occupied_count_threshold} in the 15-minute bin',
         'occupied_rate': features['occupied'].mean(),
@@ -304,13 +313,15 @@ def prepare_dataset(cfg):
         {'item': 'binary_label', 'definition': 'occupied=1, empty=0 for occupancy prediction; evaluation flips the positive class so Empty=1 for recommendations.'},
         {'item': 'threshold_logic', 'definition': f'occupied is derived from occ_count_max > {cfg.occupied_count_threshold}; any detected occupant in either south-zone sensor marks the 15-minute interval occupied.'},
         {'item': 'count_columns', 'definition': ', '.join(occ_cols)},
+        {'item': 'forecast_anchor_timing', 'definition': 'anchor_time records the start of a left-labelled 15-minute input bin. Models consume that completed bin; its effective issue boundary is anchor_time + 15 minutes and the first target interval starts at that boundary.'},
     ])
     feature_policy = pd.DataFrame([
-        {'feature_group': 'known_future_inputs', 'columns': ', '.join(time_cols), 'used_for_prediction': True, 'reason': 'Calendar/time variables are known at forecast issue time.'},
-        {'feature_group': 'observed_issue_time_sensors', 'columns': ', '.join(predictor_sensor_cols), 'used_for_prediction': True, 'reason': 'Only current/past observed sensor values are repeated from the forecast issue time; no future sensor values are used.'},
-        {'feature_group': 'leakage_safe_missing_value_preprocessing', 'columns': ', '.join(feature_cols), 'used_for_prediction': True, 'reason': 'Missing values are filled with causal forward-fill only; any leading missing values use fixed 0.0, not validation/test statistics.'},
-        {'feature_group': 'controllable_loads_for_energy_only', 'columns': ', '.join(controllable_load_cols), 'used_for_prediction': False, 'reason': 'HVAC and lighting power are excluded from predictors and used only to compute safe shiftable-load opportunity.'},
-        {'feature_group': 'excluded_operational_predictors', 'columns': ', '.join(excluded_predictor_cols), 'used_for_prediction': False, 'reason': 'Conservative leakage policy: controllable/electric load streams are not used as occupancy predictors.'},
+        {'feature_group': 'known_future_inputs', 'columns': ', '.join(time_cols), 'used_for_prediction': True, 'reason': 'Calendar/time variables are known at the effective post-bin availability boundary.', 'scope': 'post-bin saved-row convention; not a real-time source-availability proof'},
+        {'feature_group': 'completed_input_bin_sensors', 'columns': ', '.join(predictor_sensor_cols), 'used_for_prediction': True, 'reason': 'Only sensor values from the completed anchor bin or earlier are repeated across the horizon; no future sensor rows are used. A forward-filled value can be stale.', 'scope': 'upstream cleaned-release provenance remains unresolved'},
+        {'feature_group': 'model_input_missing_value_preprocessing', 'columns': ', '.join(predictor_sensor_cols), 'used_for_prediction': True, 'reason': 'After importing the cleaned release, missing model-input sensors are forward-filled only in row order; leading values use fixed 0.0. This does not establish causal provenance for upstream dataset imputation.', 'scope': 'not a prospective imputation guarantee'},
+        {'feature_group': 'load_proxy_missing_value_preprocessing', 'columns': ', '.join(excluded_predictor_cols), 'used_for_prediction': False, 'reason': 'Electrical streams are forward-filled only for the offline load-proxy calculation and are excluded from predictor features.', 'scope': 'offline accounting only'},
+        {'feature_group': 'processed_load_proxy_streams_for_offline_accounting', 'columns': ', '.join(controllable_load_cols), 'used_for_prediction': False, 'reason': 'HVAC and lighting power are excluded from predictors and used only for offline processed-load-proxy accounting; no controllability is verified.', 'scope': 'not verified savings or an executed action'},
+        {'feature_group': 'excluded_electrical_load_predictors', 'columns': ', '.join(excluded_predictor_cols), 'used_for_prediction': False, 'reason': 'Processed electrical-load streams are not used as occupancy predictors.', 'scope': 'prevents this model-input pathway; does not resolve upstream provenance'},
     ])
     feature_coverage = missing_before_fill.reset_index().rename(columns={'index': 'feature'}).sort_values('missing_before_fill', ascending=False)
 
@@ -365,11 +376,11 @@ def make_splits(df, cfg):
         audit.append({'check': 'validation_to_test_gap_hours', 'status': 'pass' if gap_hours >= 24 else 'fail', 'detail': gap_hours})
     audit.extend([
         {'check': 'train_only_scaling', 'status': 'pass', 'detail': 'Deep-model normalization statistics are fit using rows before the train boundary only; tree models use no scaler.'},
-        {'check': 'leakage_safe_preprocessing', 'status': 'pass', 'detail': 'Missing sensor/load values use causal forward-fill only plus fixed 0.0 for leading gaps; no interpolation, backfill, or test-set statistics.'},
+        {'check': 'post_import_row_order_preprocessing', 'status': 'post_import_only', 'detail': 'After import, missing sensor/load values use forward-fill from preceding rows plus fixed 0.0 for leading gaps; no new interpolation, backfill, or test-set statistics. Source-side imputation provenance remains unverified.'},
         {'check': 'historical_average_train_only', 'status': 'pass', 'detail': 'Historical averages use occupied labels before train boundary only.'},
         {'check': 'rolling_features_shift', 'status': 'pass', 'detail': 'Rolling occupancy/count features are shifted and exclude the current/future labels: arr[anchor-window:anchor].'},
-        {'check': 'future_sensor_values', 'status': 'pass', 'detail': 'Known future inputs are calendar/time only; sensor features are issue-time observations repeated across horizon.'},
-        {'check': 'controllable_load_predictor_exclusion', 'status': 'pass', 'detail': 'HVAC, lighting, MELS, and total south electricity are excluded from predictors and used only for opportunity calculation.'},
+        {'check': 'future_sensor_rows', 'status': 'post_bin_saved_row_check_only', 'detail': 'Known future inputs are calendar/time only; sensor features come from the completed anchor bin or preceding rows and are repeated across the horizon. Their effective availability is post-bin, but source observation-end provenance is unverified.'},
+        {'check': 'processed_load_proxy_predictor_exclusion', 'status': 'pass', 'detail': 'HVAC, lighting, MELS, and total south electricity are excluded from predictors and used only for offline load-proxy accounting.'},
     ])
     return splits, split_summary, pd.DataFrame(audit), train_boundary, val_boundary
 
@@ -435,6 +446,7 @@ def recommendation_metrics_from_mask(name, y_occupied, recommend_empty, threshol
     }
 
 def controllable_energy_matrix(df, anchors, cfg, controllable_load_cols):
+    """Map recorded meter values for offline load-proxy accounting only."""
     positions = future_positions(anchors, cfg.horizon_steps)
     if not controllable_load_cols:
         return np.zeros_like(positions, dtype=np.float32)
@@ -442,6 +454,11 @@ def controllable_energy_matrix(df, anchors, cfg, controllable_load_cols):
     return np.clip(load[positions], 0, None) * 0.25
 
 def energy_metrics_from_mask(name, y_occupied, recommend_empty, controllable_kwh, cfg, threshold, policy):
+    """Return legacy-named fields for offline camera-label-empty proxy overlap.
+
+    The established CSV column names are retained for artifact compatibility;
+    they do not establish controllability, a counterfactual action, or savings.
+    """
     actual_empty = y_occupied == 0
     safe = recommend_empty & actual_empty
     conflict = recommend_empty & (~actual_empty)
@@ -477,7 +494,8 @@ def historical_average_prob(df, train_boundary, positions):
 
 def rolling_mean_at_anchors(arr, anchors, window):
     # Explicit shift-before-rolling: use the window ending immediately before the
-    # forecast issue time, so hist_occ_mean_* never contains current/future labels.
+    # effective post-bin availability boundary, so hist_occ_mean_* never contains
+    # current/future labels.
     arr = np.asarray(arr, dtype=np.float64)
     csum = np.concatenate([[0.0], np.cumsum(arr, dtype=np.float64)])
     out = np.full(len(anchors), np.nan, dtype=np.float32)
@@ -509,6 +527,10 @@ def make_tabular_arrays(df, anchors, cfg, future_time_cols, anchor_sensor_cols):
     future_time = df[future_time_cols].to_numpy(np.float32)[pos.ravel()]
     future_steps = np.tile(np.arange(1, h + 1, dtype=np.float32), n).reshape(-1, 1) / h
     same_time_yesterday = target[(pos - cfg.horizon_steps).ravel()].reshape(-1, 1)
+    # ``anchors`` identify the last completed, left-labelled input bin.  Its
+    # values are available at the bin-close issue boundary; target positions
+    # begin in the following bin.  This is a timing convention, not a claim
+    # that a row is available at its left-hand timestamp label.
     anchor_blocks = [
         target[anchors], count[anchors], lag_at_anchors(target, anchors, 1), lag_at_anchors(target, anchors, 2),
         lag_at_anchors(target, anchors, 4), lag_at_anchors(target, anchors, 96), lag_at_anchors(target, anchors, 672),
@@ -556,6 +578,8 @@ class ForecastWindowDataset(Dataset):
 
     def __getitem__(self, idx):
         anchor = self.anchors[idx]
+        # Include the final completed input bin.  With left-labelled bins, the
+        # effective forecast issue is the right edge of this anchor bin.
         hist_start = anchor - self.cfg.history_steps + 1
         hist_end = anchor + 1
         future_start = anchor + 1
@@ -728,10 +752,10 @@ def select_constrained_policies(validation_sweep_df, cfg):
             met = not eligible.empty
             if met:
                 chosen = eligible.sort_values(['safe_shiftable_load_opportunity_kwh', 'empty_window_recall'], ascending=False).iloc[0]
-                note = f'max safe opportunity subject to occupancy conflict <= {delta:.0%} on validation'
+                note = f'max validation offline camera-label-empty load-proxy overlap subject to empirical interval conflict <= {delta:.0%}'
             else:
                 chosen = part.sort_values(['occupancy_conflict_rate', 'missed_opportunity_rate']).iloc[0]
-                note = f'no validation threshold met occupancy conflict <= {delta:.0%}; lowest-conflict fallback'
+                note = f'no validation threshold met empirical interval conflict <= {delta:.0%}; lowest-conflict fallback'
             selected.append({
                 'model': model,
                 'risk_delta': delta,
@@ -779,14 +803,24 @@ def pareto_efficient_frontier(part):
 
 def save_all_model_predictions(split_name, anchors, y_occ, pred_dict):
     pos = future_positions(anchors, cfg.horizon_steps)
+    bin_width = pd.Timedelta(cfg.freq)
+    anchor_labels = pd.DatetimeIndex(df.index.take(anchors))
+    target_labels = pd.DatetimeIndex(df.index.take(pos.ravel()))
     out = pd.DataFrame({
         'split': split_name,
-        'anchor_time': np.repeat(pd.Index(df.index.take(anchors)).astype(str).to_numpy(), cfg.horizon_steps),
-        'target_time': pd.Index(df.index.take(pos.ravel())).astype(str).to_numpy(),
+        'anchor_time': np.repeat(anchor_labels.astype(str).to_numpy(), cfg.horizon_steps),
+        'input_bin_start': np.repeat(anchor_labels.astype(str).to_numpy(), cfg.horizon_steps),
+        'input_bin_end': np.repeat((anchor_labels + bin_width).astype(str).to_numpy(), cfg.horizon_steps),
+        'effective_issue_time': np.repeat((anchor_labels + bin_width).astype(str).to_numpy(), cfg.horizon_steps),
+        'target_time': target_labels.astype(str).to_numpy(),
+        'target_bin_start': target_labels.astype(str).to_numpy(),
+        'target_bin_end': (target_labels + bin_width).astype(str).to_numpy(),
         'horizon_step': np.tile(np.arange(1, cfg.horizon_steps + 1), len(anchors)),
         'actual_occupied': y_occ.ravel().astype(int),
         'actual_empty_positive': 1 - y_occ.ravel().astype(int),
         'positive_class': 'empty',
+        'anchor_label_semantics': 'left label of completed [t, t+15 min) input bin',
+        'availability_status': 'post-bin saved-row convention only; source provenance unverified',
     })
     for model, occ_prob in pred_dict.items():
         slug = slugify_model_name(model)
@@ -848,15 +882,22 @@ def continuous_window_metrics_for_arrays(model, y_occ, empty_prob, threshold, mi
 
 def controllable_load_assumptions(df):
     specs = [
-        {'assumption': 'hvac_lighting_full_metered', 'description': 'HVAC south + lighting south at 100% metered kW', 'hvac_S': 1.0, 'lig_S': 1.0, 'mels_S': 0.0, 'ele_south_total': 0.0},
-        {'assumption': 'hvac_lighting_conservative', 'description': '30% HVAC south + 80% lighting south controllable', 'hvac_S': 0.30, 'lig_S': 0.80, 'mels_S': 0.0, 'ele_south_total': 0.0},
-        {'assumption': 'lighting_only_full', 'description': 'Lighting south at 100% metered kW', 'hvac_S': 0.0, 'lig_S': 1.0, 'mels_S': 0.0, 'ele_south_total': 0.0},
-        {'assumption': 'hvac_only_conservative', 'description': '30% HVAC south controllable', 'hvac_S': 0.30, 'lig_S': 0.0, 'mels_S': 0.0, 'ele_south_total': 0.0},
-        {'assumption': 'hvac_lighting_plug_conservative', 'description': '30% HVAC + 80% lighting + 10% plug/MELs south controllable', 'hvac_S': 0.30, 'lig_S': 0.80, 'mels_S': 0.10, 'ele_south_total': 0.0},
+        {'assumption': 'hvac_lighting_full_metered', 'description': 'HVAC south + lighting south at 100% of recorded meter values', 'hvac_S': 1.0, 'lig_S': 1.0, 'mels_S': 0.0, 'ele_south_total': 0.0},
+        {'assumption': 'hvac_lighting_conservative', 'description': '30% HVAC south + 80% lighting south accounting coefficients', 'hvac_S': 0.30, 'lig_S': 0.80, 'mels_S': 0.0, 'ele_south_total': 0.0},
+        {'assumption': 'lighting_only_full', 'description': 'Lighting south at 100% of recorded meter values', 'hvac_S': 0.0, 'lig_S': 1.0, 'mels_S': 0.0, 'ele_south_total': 0.0},
+        {'assumption': 'hvac_only_conservative', 'description': '30% HVAC south accounting coefficient', 'hvac_S': 0.30, 'lig_S': 0.0, 'mels_S': 0.0, 'ele_south_total': 0.0},
+        {'assumption': 'hvac_lighting_plug_conservative', 'description': '30% HVAC + 80% lighting + 10% plug/MELs south accounting coefficients', 'hvac_S': 0.30, 'lig_S': 0.80, 'mels_S': 0.10, 'ele_south_total': 0.0},
         {'assumption': 'total_south_30pct', 'description': '30% of total south electricity; component meters not added to avoid double counting', 'hvac_S': 0.0, 'lig_S': 0.0, 'mels_S': 0.0, 'ele_south_total': 0.30},
     ]
     cols = ['hvac_S', 'lig_S', 'mels_S', 'ele_south_total']
-    return pd.DataFrame([{**s, **{c: s.get(c, 0.0) if c in df.columns else 0.0 for c in cols}} for s in specs])
+    return pd.DataFrame([
+        {
+            **s,
+            'interpretation': 'hypothetical processed-load accounting coefficient; not verified controllability or savings',
+            **{c: s.get(c, 0.0) if c in df.columns else 0.0 for c in cols},
+        }
+        for s in specs
+    ])
 
 def assumption_energy_matrix(df, anchors, cfg, assumption_row):
     positions = future_positions(anchors, cfg.horizon_steps)
@@ -869,15 +910,15 @@ def assumption_energy_matrix(df, anchors, cfg, assumption_row):
 
 
 def configure_runtime(config: Config, show: bool = False) -> Config:
-    """Create output directories, seed libraries, and write ``results/config.json``."""
+    """Configure isolated legacy-replay outputs; this is not an empirical rerun."""
     global cfg
     cfg = config
     set_notebook_output(show)
     warnings.filterwarnings('ignore')
     sns.set_theme(style='whitegrid')
-    Path(cfg.figure_dir).mkdir(exist_ok=True)
-    Path(cfg.result_dir).mkdir(exist_ok=True)
-    Path('predictions').mkdir(exist_ok=True)
+    Path(cfg.figure_dir).mkdir(parents=True, exist_ok=True)
+    Path(cfg.result_dir).mkdir(parents=True, exist_ok=True)
+    Path(cfg.prediction_dir).mkdir(parents=True, exist_ok=True)
     random.seed(cfg.random_seeds[0])
     np.random.seed(cfg.random_seeds[0])
     torch.manual_seed(cfg.random_seeds[0])
@@ -885,24 +926,35 @@ def configure_runtime(config: Config, show: bool = False) -> Config:
     with open(Path(cfg.result_dir) / 'config.json', 'w', encoding='utf-8') as f:
         json.dump(asdict(cfg), f, indent=2)
     print('Torch:', torch.__version__, 'device:', 'cuda' if torch.cuda.is_available() else 'cpu')
-    print('Timestamp assumption:', cfg.raw_timestamp_timezone, '->', cfg.local_timezone)
+    print('Timestamp working assumption (not source-confirmed):', cfg.raw_timestamp_timezone, '->', cfg.local_timezone)
+    print('Replay status: legacy cleaned-release reproduction; not an empirical/prospective validation.')
     print('Main models:', ', '.join(cfg.main_models))
     print('LightGBM available:', LGBMClassifier is not None)
     return cfg
 
 
-def write_individual_prediction_exports(split_name, anchors, y_occ, pred_dict, cfg, prediction_dir='predictions'):
-    """Write one long-form prediction CSV per model under ``predictions/``."""
-    prediction_dir = Path(prediction_dir)
+def write_individual_prediction_exports(split_name, anchors, y_occ, pred_dict, cfg, prediction_dir=None):
+    """Write explicit post-bin long-form prediction exports for a legacy replay."""
+    prediction_dir = Path(prediction_dir or cfg.prediction_dir)
     prediction_dir.mkdir(parents=True, exist_ok=True)
     pos = future_positions(anchors, cfg.horizon_steps)
+    bin_width = pd.Timedelta(cfg.freq)
+    anchor_labels = pd.DatetimeIndex(df.index.take(anchors))
+    target_labels = pd.DatetimeIndex(df.index.take(pos.ravel()))
     base = pd.DataFrame({
-        'timestamp': pd.Index(df.index.take(pos.ravel())).astype(str).to_numpy(),
-        'forecast_anchor_time': np.repeat(pd.Index(df.index.take(anchors)).astype(str).to_numpy(), cfg.horizon_steps),
+        'timestamp': target_labels.astype(str).to_numpy(),
+        'forecast_anchor_time': np.repeat(anchor_labels.astype(str).to_numpy(), cfg.horizon_steps),
+        'input_bin_start': np.repeat(anchor_labels.astype(str).to_numpy(), cfg.horizon_steps),
+        'input_bin_end': np.repeat((anchor_labels + bin_width).astype(str).to_numpy(), cfg.horizon_steps),
+        'effective_issue_time': np.repeat((anchor_labels + bin_width).astype(str).to_numpy(), cfg.horizon_steps),
+        'target_bin_start': target_labels.astype(str).to_numpy(),
+        'target_bin_end': (target_labels + bin_width).astype(str).to_numpy(),
         'horizon_step': np.tile(np.arange(1, cfg.horizon_steps + 1), len(anchors)),
         'horizon_minutes': np.tile(np.arange(1, cfg.horizon_steps + 1) * 15, len(anchors)),
         'y_true_occupied': y_occ.ravel().astype(int),
         'y_true_empty': 1 - y_occ.ravel().astype(int),
+        'anchor_label_semantics': 'left label of completed [t, t+15 min) input bin',
+        'availability_status': 'post-bin saved-row convention only; source provenance unverified',
     })
     paths = []
     for model, occ_prob in pred_dict.items():
@@ -991,8 +1043,8 @@ def generate_figures_from_pipeline_state(show: bool = False):
     for delta in cfg.risk_deltas:
         ax.axvline(delta, color='gray', linestyle='--', linewidth=0.9)
     ax.set_xlabel('Occupancy conflict rate = false empty recommendations / all recommendations')
-    ax.set_ylabel('Safe shiftable-load opportunity (kWh, offline estimate)')
-    ax.set_title('Risk-opportunity threshold sweep with Pareto-efficient frontiers')
+    ax.set_ylabel('Offline camera-label-empty load-proxy overlap (kWh)')
+    ax.set_title('Empirical conflict--opportunity threshold sweep with Pareto-efficient frontiers')
     model_handles = [Line2D([0], [0], color=color, linewidth=2.2, label=model) for model, color in palette.items()]
     marker_handles = [
         Line2D([0], [0], marker=marker, color='black', linestyle='None', markersize=8, label=f'Selected {delta:.0%}')
@@ -1002,7 +1054,7 @@ def generate_figures_from_pipeline_state(show: bool = False):
     fig.text(
         0.02,
         0.02,
-        'Raw dots = all threshold sweep points. Solid line = Pareto-efficient frontier after filtering dominated points. Large markers = validation-selected thresholds evaluated on held-out test days. Vertical dashed lines = risk constraints.',
+        'Raw dots = all threshold sweep points. Solid line = Pareto-efficient frontier after filtering dominated points. Large markers = validation-selected thresholds evaluated on held-out test days. Vertical dashed lines = empirical validation conflict cutoffs.',
         ha='left',
         va='bottom',
         fontsize=8,
@@ -1018,9 +1070,9 @@ def generate_figures_from_pipeline_state(show: bool = False):
     policy_plot['risk_delta_label'] = (policy_plot['risk_delta'] * 100).round().astype(int).astype(str) + '%'
     plt.figure(figsize=(12, 5.5))
     sns.barplot(data=policy_plot, x='risk_delta_label', y='safe_shiftable_load_opportunity_kwh', hue='model')
-    plt.title('Constrained threshold policy: maximize safe opportunity under risk delta')
-    plt.xlabel('Allowed occupancy conflict rate delta')
-    plt.ylabel('Safe shiftable-load opportunity (kWh)')
+    plt.title('Validation-selected policy: offline load-proxy overlap under a conflict cutoff')
+    plt.xlabel('Empirical validation conflict cutoff')
+    plt.ylabel('Offline camera-label-empty load-proxy overlap (kWh)')
     plt.legend(fontsize=8)
     save_fig(Path(cfg.figure_dir) / 'threshold_policy_safe_opportunity.png')
     plt.figure(figsize=(12, 5.5))
@@ -1043,9 +1095,9 @@ def generate_figures_from_pipeline_state(show: bool = False):
     if len(sens_plot):
         plt.figure(figsize=(13, 6))
         sns.barplot(data=sens_plot, x='load_assumption', y='safe_estimated_opportunity_kwh', hue='model')
-        plt.title('Safe estimated opportunity sensitivity under delta=10% policy')
+        plt.title('Offline load-proxy sensitivity under the 10% empirical conflict cutoff')
         plt.xlabel('Controllable-load assumption')
-        plt.ylabel('Safe estimated opportunity (kWh)')
+        plt.ylabel('Offline load-proxy overlap (kWh)')
         plt.xticks(rotation=25, ha='right')
         plt.legend(fontsize=8)
         save_fig(Path(cfg.figure_dir) / 'energy_sensitivity_analysis.png')
@@ -1180,7 +1232,10 @@ def generate_figures_from_pipeline_state(show: bool = False):
 
 
 def run_pipeline(config: Config | None = None, make_figures: bool = True, show: bool = False):
-    """Run the full experiment pipeline and optionally regenerate figures."""
+    """Replay the legacy cleaned-release experiment and optional legacy figures.
+
+    It must not be presented as a new empirical or prospective experiment.
+    """
     global _, actual, actual_empty, actual_occ, anchors, ap, assumption, auc, ax, base_empty_prob, base_score, best_daily_empty_prob, best_daily_pred, best_daily_rec, best_daily_y, best_empty_prob, best_long, best_model, best_policy, best_prob, best_rec, best_threshold, bin_id, boot, bootstrap_ci_df, bootstrap_rows, bucket_defs, bucket_rows, case_choice_df, case_choices, case_df, case_rows, cfg, chosen, chosen_rows, col, conflict, conflict_count, continuous_window_policy_df, continuous_window_sweep_df, controllable_load_cols, controllable_load_inventory_df, current_run_manifest_df, daily_idx, data_summary, dates, day_order, default_rec_metrics_df, default_rec_rows, delta, device, df, dlinear, eb, empty_prob, empty_reliability_df, en_metric, end, energy_sensitivity_df, energy_sensitivity_rows, example, f, feature, feature_coverage, feature_policy, fig, figure_files, fold, fold_train_boundary, fold_val_end, fold_y, folder, fp, fpr, frac, frac_pos, fractions, frontier, future_values, global_i, global_mean, heldout, hist, hist_feature_cols, hist_mean, hist_prob, hist_scaled, hist_starts, hist_std, hist_values, horizon_bucket_metrics_df, i, idx, inventory_rows, is_rec, j, kwh, label, label_semantics, leakage_audit, lgbm, lgbm_models, load_assumptions_df, local_i, m, manifest_rows, mean_pred, metric, metric_definitions, metric_long, min_steps, missed_count, model, model_metrics_by_split_df, model_metrics_by_split_rows, model_metrics_df, model_name, mp, n_blocks, name, neg, numeric_seed_cols, occ_prob, occ_zone_raw, occupied_feature_index, outputs, p, p_empty, pareto_frontier_df, pareto_rows, part, pb, perm_rows, permutation_importance_df, ph, policy, policy_plot, policy_results_df, pos, pos_weight, precision, predictions, predictor_sensor_cols, prob, profile, rec, rec_metric, rec_row, recall, recommendation_metrics_by_split_df, recommendation_metrics_by_split_rows, record, records, reliability_rows, rf, rf_cv, rf_models, rng, rolling_origin_cv_df, rolling_rows, row, run_summary, safe, safe_count, sample, sample_idx, score, seed, seed_metrics_df, seed_metrics_rows, seed_prediction_records, seed_summary_df, sel, selected_policies_df, sens_plot, source_cols, source_coverage, source_series, source_slots, spatial_rows, spatial_validation_df, split_name, split_pred, split_summary, split_y, splits, start, start_train, table, tabular_feature_names, target, target_ends, test_daily_anchors, test_daily_energy, test_daily_idx, test_daily_predictions, test_daily_y, test_daily_y_for_windows, test_ds, test_positions, test_pred, test_rows, test_slots, test_sweep_df, threshold, time_cols, timezone_audit, timezone_hour_audit, top_perm, tpr, train_a, train_boundary, train_ds, train_future_y, train_row_mask, train_rows, training_control_rows, training_histories, training_history, transformer, transitions, val_a, val_boundary, val_daily_idx, val_ds, val_pos, val_positions, val_pred, val_predictions, valid_success, validation_sweep_df, values, window_duration_steps, window_plot, window_policy_rows, window_sweep_rows, x_holdout, x_perm, x_perm_base, x_source, x_test, x_train, x_val, xt, xv, y_empty_flat, y_empty_sample, y_holdout, y_source, y_test, y_train, y_val, yb, yd, yh, yt, yy, z, zone_cols, zone_feature_matrix, zone_labels
     configure_runtime(config or Config(), show=show)
     df, data_summary, source_coverage, feature_coverage, label_semantics, feature_policy, timezone_audit, timezone_hour_audit, time_cols, predictor_sensor_cols, controllable_load_cols = prepare_dataset(cfg)
@@ -1232,7 +1287,8 @@ def run_pipeline(config: Config | None = None, make_figures: bool = True, show: 
         if LGBMClassifier is not None:
             lgbm = LGBMClassifier(
                 n_estimators=cfg.lgbm_estimators, learning_rate=0.05, num_leaves=31,
-                min_child_samples=50, subsample=0.85, colsample_bytree=0.85,
+                min_child_samples=50, colsample_bytree=0.85,
+                subsample=1.0, subsample_freq=0,
                 reg_lambda=1.0, class_weight='balanced', random_state=seed,
                 n_jobs=-1, verbose=-1,
             )
@@ -1293,6 +1349,12 @@ def run_pipeline(config: Config | None = None, make_figures: bool = True, show: 
     occupied_feature_index = hist_feature_cols.index('occupied')
     training_histories = []
     for seed in cfg.random_seeds:
+        # Historical saved-output behavior: the seed reset occurs inside
+        # train_deep_model after these modules are constructed.  Keep this
+        # ordering to preserve traceability of the committed legacy artifacts;
+        # move set_all_seeds(seed) before construction only as part of a full,
+        # protocol-locked empirical rerun that regenerates every dependent
+        # prediction and policy artifact.
         dlinear, hist = train_deep_model('DLinear', DLinear(cfg.history_steps, cfg.horizon_steps, occupied_feature_index), train_ds, val_ds, pos_weight, cfg, device, seed)
         training_histories.append(hist)
         seed_prediction_records.append({'model': 'DLinear', 'seed': seed, 'val_pred': predict_deep(dlinear, val_ds, cfg, device), 'test_pred': predict_deep(dlinear, test_ds, cfg, device)})
@@ -1405,7 +1467,8 @@ def run_pipeline(config: Config | None = None, make_figures: bool = True, show: 
             'available_in_dataset': col in df.columns,
             'unit_assumption': 'kW before multiplying by 0.25 h',
             'used_as_model_input': False,
-            'role': 'opportunity_sensitivity_only' if col in ['mels_S', 'ele_south_total'] else 'default_controllable_load'
+            'role': 'offline_proxy_sensitivity_only' if col in ['mels_S', 'ele_south_total'] else 'default_offline_load_proxy',
+            'interpretation': 'processed meter proxy only; not verified controllability or savings',
         })
     controllable_load_inventory_df = pd.DataFrame(inventory_rows)
     controllable_load_inventory_df.to_csv(Path(cfg.result_dir) / 'controllable_load_inventory.csv', index=False, encoding='utf-8-sig')
@@ -1477,7 +1540,10 @@ def run_pipeline(config: Config | None = None, make_figures: bool = True, show: 
             })
     bootstrap_ci_df = pd.DataFrame(bootstrap_rows)
     bootstrap_ci_df.to_csv(Path(cfg.result_dir) / 'block_bootstrap_confidence_intervals.csv', index=False, encoding='utf-8-sig')
-    best_model = model_metrics_df.iloc[0]['model']
+    # This retrospective test ranking is retained only for legacy display
+    # exports. It is not a canonical model-selection rule.
+    legacy_test_ranked_model = model_metrics_df.iloc[0]['model']
+    best_model = legacy_test_ranked_model
     best_policy = selected_policies_df[(selected_policies_df['model'] == best_model) & (np.isclose(selected_policies_df['risk_delta'], 0.10))]
     best_threshold = float(best_policy.iloc[0]['selected_empty_probability_threshold']) if len(best_policy) else cfg.default_empty_threshold
     best_prob = predictions[best_model]
@@ -1494,18 +1560,19 @@ def run_pipeline(config: Config | None = None, make_figures: bool = True, show: 
         'recommend_empty_stable': best_rec.ravel(),
         'risk_delta_10pct_threshold': best_threshold,
     })
-    best_long.to_csv(Path(cfg.result_dir) / 'test_forecast_probabilities_best_model.csv', index=False, encoding='utf-8-sig')
+    best_long.to_csv(Path(cfg.result_dir) / 'test_forecast_probabilities_legacy_test_ranked_model.csv', index=False, encoding='utf-8-sig')
     metric_definitions = pd.DataFrame([
-        {'metric': 'AUPRC/F1/Precision/Recall', 'definition': 'Computed with Empty=1 as the positive class.'},
-        {'metric': 'Occupancy conflict rate', 'definition': 'False empty recommendations / all empty recommendations = 1 - empty-window precision.'},
-        {'metric': 'Standard FPR', 'definition': 'False empty recommendations / all actually occupied windows.'},
-        {'metric': 'Safe shiftable-load opportunity', 'definition': 'Sum over safe recommended intervals of P_t,controllable * 0.25 hour; default controllable load is HVAC south + lighting south.'},
-        {'metric': 'Gross estimated opportunity', 'definition': 'Recommended controllable-load kWh before excluding occupancy conflicts.'},
-        {'metric': 'Continuous empty-window metrics', 'definition': 'Window-level precision/recall/conflict are computed on disjoint runs from non-overlapping daily forecasts for 1h, 2h, and 4h minimum durations.'},
+        {'metric': 'AUPRC/F1/Precision/Recall', 'definition': 'Computed with Empty=1 as the positive class.', 'scope': 'classification diagnostic over the stated saved-output rows'},
+        {'metric': 'Occupancy conflict rate', 'definition': 'Occupied camera-labelled recommendations / all recommendations = 1 - empty-window precision.', 'scope': 'empirical interval conflict; not a probabilistic safety guarantee'},
+        {'metric': 'Standard FPR', 'definition': 'Occupied camera-labelled recommendations / all actually occupied intervals.', 'scope': 'classification diagnostic'},
+        {'metric': 'Offline camera-label-empty load-proxy overlap', 'definition': 'Sum over camera-label-empty recommended intervals of processed HVAC south plus lighting south meter kW times 0.25 hour.', 'scope': 'offline overlap only; not verified controllability or energy savings'},
+        {'metric': 'Gross processed load-proxy overlap', 'definition': 'Processed HVAC-plus-lighting meter kWh over all recommended intervals before excluding occupied camera labels.', 'scope': 'offline accounting only'},
+        {'metric': 'Continuous empty-window metrics', 'definition': 'Window-level precision, recall, and conflict are computed on disjoint runs from non-overlapping daily forecasts for 1h, 2h, and 4h minimum durations.', 'scope': 'post-bin saved-output diagnostic'},
     ])
     metric_definitions.to_csv(Path(cfg.result_dir) / 'metric_definitions.csv', index=False, encoding='utf-8-sig')
     run_summary = pd.DataFrame([{
-        'best_model_by_empty_auprc': best_model,
+        'legacy_test_ranked_model_for_display': legacy_test_ranked_model,
+        'display_model_selection_scope': 'held-out test ranking; excluded from canonical model selection',
         'best_model_delta_10_threshold': best_threshold,
         'test_forecast_intervals': int(y_test.size),
         'test_forecast_anchors': int(len(splits['test'])),
@@ -1548,7 +1615,7 @@ def run_pipeline(config: Config | None = None, make_figures: bool = True, show: 
         xv, _, _ = make_tabular_arrays(df, val_a, cfg, time_cols, predictor_sensor_cols)
         idx = stratified_sample_indices(yt, cfg.tabular_max_train_rows // 2, cfg.random_seeds[0] + fold)
         if LGBMClassifier is not None:
-            m = LGBMClassifier(n_estimators=180, learning_rate=0.06, num_leaves=31, min_child_samples=50, subsample=0.85, colsample_bytree=0.85, class_weight='balanced', random_state=cfg.random_seeds[0] + fold, n_jobs=-1, verbose=-1)
+            m = LGBMClassifier(n_estimators=180, learning_rate=0.06, num_leaves=31, min_child_samples=50, colsample_bytree=0.85, subsample=1.0, subsample_freq=0, class_weight='balanced', random_state=cfg.random_seeds[0] + fold, n_jobs=-1, verbose=-1)
             m.fit(xt[idx], yt[idx])
             prob = m.predict_proba(xv)[:, 1].reshape(len(val_a), -1)
             row = empty_model_metrics('LightGBM', fold_y, prob)
@@ -1567,7 +1634,7 @@ def run_pipeline(config: Config | None = None, make_figures: bool = True, show: 
     zone_cols = [c for c in occ_zone_raw.columns if c.startswith('occ_')]
     zone_labels = {}
     for col in zone_cols:
-        z = occ_zone_raw[col].resample(cfg.freq).max().reindex(df.index)
+        z = occ_zone_raw[col].resample(cfg.freq, closed='left', label='left').max().reindex(df.index)
         zone_labels[col] = (z.ffill().fillna(0.0) > cfg.occupied_count_threshold).astype(float)
     zone_feature_matrix = df[time_cols].to_numpy(np.float32)
     train_rows = df.index < train_boundary
@@ -1607,14 +1674,14 @@ def run_pipeline(config: Config | None = None, make_figures: bool = True, show: 
         {'validation': 'block_bootstrap_ci', 'status': 'implemented', 'scope': '95% CIs over non-overlapping daily forecast blocks for main models.'},
     ]).to_csv(Path(cfg.result_dir) / 'research_validation_scope.csv', index=False, encoding='utf-8-sig')
     pd.DataFrame([
-        {'field': 'state', 'definition': 'Past occupancy sequence, issue-time sensors, known future calendar features, current forecast probabilities.'},
-        {'field': 'action', 'definition': 'Recommend or do not recommend shifting a controllable load/schedule into a predicted empty interval.'},
-        {'field': 'reward', 'definition': 'Safe controllable kWh opportunity minus occupancy-conflict penalty and missed-opportunity penalty.'},
-        {'field': 'transition', 'definition': 'Advance one interval or one decision horizon; future integration can connect this table to Sinergym/EnergyPlus.'},
+        {'field': 'state', 'definition': 'Past occupancy sequence, completed-input-bin sensors, known future calendar features, and current uncalibrated forecast scores.', 'scope': 'future simulation design; no real-time availability proof'},
+        {'field': 'action', 'definition': 'Future simulator placeholder: recommend or do not recommend a hypothetical schedule change for a predicted empty interval.', 'scope': 'not an executed building-control action'},
+        {'field': 'reward', 'definition': 'Future simulator objective: offline camera-label-empty processed-load-proxy overlap minus empirical-conflict and missed-overlap penalties.', 'scope': 'not realized energy savings'},
+        {'field': 'transition', 'definition': 'Future simulator placeholder: advance one interval or decision horizon; an external simulator could define physical dynamics.', 'scope': 'not executed in this study'},
     ]).to_csv(Path(cfg.result_dir) / 'state_action_reward_schema.csv', index=False, encoding='utf-8-sig')
     pd.DataFrame([
-        {'todo': 'decision_focused_loss', 'detail': 'Total Loss = BCE occupancy loss + lambda_fp * false-empty penalty + lambda_miss * missed-safe-opportunity penalty.'},
-        {'todo': 'rl_environment_adapter', 'detail': 'Expose forecast state, threshold/action, and safe_shiftable_load_opportunity reward for sequential control simulation.'},
+        {'todo': 'decision_focused_loss', 'detail': 'Future study: Total Loss = BCE occupancy loss + lambda_fp * occupied-label recommendation penalty + lambda_miss * missed load-proxy-overlap penalty.'},
+        {'todo': 'rl_environment_adapter', 'detail': 'Future study: expose forecast state, hypothetical action, and offline load-proxy-overlap objective in a physical control simulator.'},
         {'todo': 'appendix_advanced_models', 'detail': 'Run TFT/PatchTST only with matched splits, feature inputs, seeds, and tuning budget before comparing in main text.'},
     ]).to_csv(Path(cfg.result_dir) / 'future_work_todos.csv', index=False, encoding='utf-8-sig')
     display(Markdown('## Research-grade validation additions'))

@@ -191,12 +191,12 @@ def _plot_sweeps(results_dir: Path, figures_dir: Path) -> list[Path]:
                 linewidth=2.2,
                 label=model,
             )
-        for delta, label in [(0.05, "5% risk constraint"), (0.10, "10% risk constraint"), (0.20, "20% risk constraint")]:
+        for delta, label in [(0.05, "5% empirical conflict cutoff"), (0.10, "10% empirical conflict cutoff"), (0.20, "20% empirical conflict cutoff")]:
             ax.axvline(delta, color="gray", linestyle="--", linewidth=0.9)
             ax.text(delta + 0.003, ax.get_ylim()[1] * 0.96, label, fontsize=8, color="dimgray", rotation=90, va="top")
         ax.set_xlabel("Test occupancy conflict rate")
-        ax.set_ylabel("Safe shiftable-load opportunity (kWh, offline estimate)")
-        ax.set_title("Risk-opportunity threshold sweep with Pareto-efficient frontiers")
+        ax.set_ylabel("Offline camera-label-empty load-proxy overlap (kWh)")
+        ax.set_title("Empirical conflict--opportunity threshold sweep with Pareto frontiers")
         model_handles = [Line2D([0], [0], color=color, linewidth=2.2, label=model) for model, color in palette.items()]
         ax.legend(
             handles=model_handles,
@@ -205,7 +205,7 @@ def _plot_sweeps(results_dir: Path, figures_dir: Path) -> list[Path]:
             borderaxespad=0,
             fontsize=8,
         )
-        caption = "Vertical dashed lines show risk constraints. Solid lines show Pareto-efficient threshold choices. Transparent points show all tested thresholds."
+        caption = "Vertical dashed lines show empirical validation conflict cutoffs. Solid lines show Pareto-efficient threshold choices. Transparent points show all tested thresholds."
         fig.text(0.02, 0.025, caption, ha="left", va="bottom", fontsize=8)
         fig.subplots_adjust(right=0.76, bottom=0.18)
         path = figures_dir / "energy_risk_tradeoff_pareto.png"
@@ -227,9 +227,9 @@ def _plot_policy_outputs(results_dir: Path, figures_dir: Path) -> list[Path]:
     paths = []
     plt.figure(figsize=(12, 5.5))
     sns.barplot(data=policy, x="risk_delta_label", y="safe_shiftable_load_opportunity_kwh", hue="model")
-    plt.title("Safe opportunity from validation-selected policies evaluated on test")
+    plt.title("Offline camera-label-empty load-proxy overlap from validation-selected policies")
     plt.xlabel("Allowed validation conflict rate")
-    plt.ylabel("Safe shiftable-load opportunity (kWh, offline estimate)")
+    plt.ylabel("Offline camera-label-empty load-proxy overlap (kWh)")
     plt.legend(fontsize=8)
     paths.append(_save_fig(figures_dir / "threshold_policy_safe_opportunity.png"))
 
@@ -246,8 +246,8 @@ def _plot_policy_outputs(results_dir: Path, figures_dir: Path) -> list[Path]:
         plt.figure(figsize=(10, 5))
         sns.barplot(data=delta_10, x="model", y="safe_shiftable_load_opportunity_kwh", color="tab:green")
         plt.xticks(rotation=20, ha="right")
-        plt.title("Safe shiftable-load opportunity by model, delta=10%")
-        plt.ylabel("Safe shiftable-load opportunity (kWh)")
+        plt.title("Offline camera-label-empty load-proxy overlap by model, 10% cutoff")
+        plt.ylabel("Offline load-proxy overlap (kWh)")
         plt.xlabel("")
         paths.append(_save_fig(figures_dir / "safe_shiftable_load_by_model.png"))
     return paths
@@ -287,9 +287,9 @@ def _plot_window_and_sensitivity(results_dir: Path, figures_dir: Path) -> list[P
         y_col = "safe_estimated_opportunity_kwh" if "safe_estimated_opportunity_kwh" in plot else "safe_shiftable_load_kwh"
         plt.figure(figsize=(13, 6))
         sns.barplot(data=plot, x="load_assumption", y=y_col, hue="model")
-        plt.title("Safe estimated opportunity sensitivity under delta=10% policy")
-        plt.xlabel("Controllable-load assumption")
-        plt.ylabel("Safe estimated opportunity (kWh)")
+        plt.title("Hypothetical meter-coefficient sensitivity under 10% cutoff")
+        plt.xlabel("Hypothetical meter coefficient scenario")
+        plt.ylabel("Offline label-empty proxy overlap (kWh)")
         plt.xticks(rotation=25, ha="right")
         plt.legend(fontsize=8)
         paths.append(_save_fig(figures_dir / "energy_sensitivity_analysis.png"))
@@ -321,14 +321,14 @@ def _plot_curves(results_dir: Path, figures_dir: Path) -> list[Path]:
 
     reliability_rows = []
     plt.figure(figsize=(8.5, 7))
-    plt.plot([0, 1], [0, 1], "--", color="gray", linewidth=1, label="perfect calibration")
+    plt.plot([0, 1], [0, 1], "--", color="gray", linewidth=1, label="ideal calibrated-probability reference (no calibrator fitted)")
     for name, prob in probabilities.items():
         p_empty = np.clip(1.0 - prob.ravel(), 1e-6, 1 - 1e-6)
         frac_pos, mean_pred = calibration_curve(y_empty_flat, p_empty, n_bins=10, strategy="quantile")
         for bin_id, (mp, fp) in enumerate(zip(mean_pred, frac_pos), start=1):
             reliability_rows.append({"model": name, "positive_class": "empty", "bin": bin_id, "mean_predicted_empty_probability": mp, "observed_empty_fraction": fp})
         plt.plot(mean_pred, frac_pos, marker="o", linewidth=1.5, label=name)
-    plt.xlabel("Mean predicted empty probability")
+    plt.xlabel("Mean Empty score (uncalibrated)")
     plt.ylabel("Observed empty fraction")
     plt.title("Reliability curve with Empty=1")
     plt.legend(fontsize=8, loc="upper left")
@@ -426,7 +426,7 @@ def _plot_examples(results_dir: Path, figures_dir: Path) -> list[Path]:
         label = csv_path.stem.removeprefix("example_")
         example["date"] = pd.to_datetime(example["date"], utc=True).dt.tz_convert("America/Los_Angeles")
         fig, ax = plt.subplots(figsize=(13, 4.8))
-        ax.step(example["date"], example["predicted_empty_probability"], where="post", label="Predicted empty probability")
+        ax.step(example["date"], example["predicted_empty_probability"], where="post", label="Predicted Empty score (legacy column; uncalibrated)")
         if "actual_occupied" in example:
             ax.fill_between(example["date"], 0, example["actual_occupied"], step="post", alpha=0.22, label="actual occupied")
         if "recommend_empty_stable" in example:
@@ -444,7 +444,7 @@ def _plot_examples(results_dir: Path, figures_dir: Path) -> list[Path]:
                     recommended_label_added = True
         ax.set_ylim(-0.02, 1.05)
         ax.set_title(label.replace("_", " ").title())
-        ax.set_ylabel("Probability / occupancy")
+        ax.set_ylabel("Empty score / occupancy")
         ax.legend(loc="upper right")
         paths.append(_save_fig(figures_dir / f"example_forecast_{label}.png"))
     return paths

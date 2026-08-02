@@ -1,178 +1,67 @@
-# Reproducing the Experiment
+# Reproducing the Audited Artifacts
 
-There are two supported paths: deterministic hybrid regeneration from committed saved predictions, and full raw-data retraining.
+## Two distinct paths
 
-## 1. Environment
+1. **Saved-output regeneration (verified here):** reads committed processed/prediction CSVs and reproduces downstream analysis.
+2. **Empirical retraining (not verified here):** requires source streams with timestamp/imputation provenance, corrected initialization, and a locked environment.
 
-Use Python 3.10-3.12; Python 3.11 is the supported CI target.
+Do not describe the first path as a full raw-data rerun.
 
-Conda:
+## Current environment
 
-```bash
-conda env create -f environment.yml
-conda activate decision-aware-occupancy
-```
+The audit ran with the workspace Python 3.13.2 and imported NumPy 1.26.4, pandas 2.3.3, scikit-learn 1.9.0, PyTorch 2.12.0, LightGBM 4.6.0, Matplotlib 3.10.9, and seaborn 0.13.2. The historical environment checker targets Python 3.10--3.12 and is not a lockfile. Record an exact lockfile/container before an empirical retraining.
 
-Virtual environment:
+## Saved-output regeneration
 
-```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-```
+From the repository root:
 
-On macOS, LightGBM may require `brew install libomp`.
+    python3 -m pytest -q
+    python3 scripts/generate_hybrid_artifacts.py
+    python3 scripts/audit_validation_selection_stability.py
+    python3 scripts/run_decision_aware_joint_search.py
+    python3 scripts/run_window_aware_decision_search.py
+    python3 paper/scripts/generate_paper_figures.py
 
-The staged July environment pins are archived at `archive/new_staging_2026-07/staged_docs/requirements.txt`; they are provenance, not the portable installation file.
+The canonical generator validates prediction alignment, repeats the validation-only primary blend/threshold selection, and writes canonical result, uncertainty, calibration-diagnostic, figure, and time-semantics artifacts. The stability script intentionally reads validation and processed exports only; it does not select a replacement model. The two expanded searches are saved-output exploratory diagnostics.
 
-## 2. Environment and unit checks
+## Key inputs and outputs
 
-```bash
-python scripts/check_environment.py
-python -m pytest -q
-```
+Inputs:
 
-Tests include hybrid convex-blend calculations, weight-grid behavior, validation/test split integrity, fixed-threshold policy accounting, validation-before-test selection ordering, and exact canonical reproduction from saved prediction exports.
+- 'results/forecast_predictions_validation_all_models.csv'
+- 'results/forecast_predictions_test_all_models.csv'
+- 'results/processed_lbnl_15min_pacific.csv'
 
-## 3. Reproduce the hybrid from saved outputs
+Important outputs:
 
-This path does not train models and does not require raw Dryad data:
+- 'results/forecast_time_semantics.csv'
+- 'results/canonical_model_comparison.csv'
+- 'results/canonical_policy_10pct.csv'
+- 'results/canonical_uncertainty_summary.csv'
+- 'results/validation_selection_stability.csv'
+- 'paper/audits/rerun_manifest.md'
 
-```bash
-python scripts/generate_hybrid_artifacts.py
-```
+Expected canonical values are AUPRC 0.8513696056, threshold 0.875, opportunity 490.1463795 kWh, 259/259/0 recommended/safe/conflict intervals, and 14/14 windows. These values are post-bin saved-output calculations, not prospective controls.
 
-It performs the following in order:
+## Quarantined legacy cleaned-release replay
 
-1. Validates the canonical validation prediction schema, 96-step anchors, labels, and probabilities.
-2. Selects Seasonal-Transformer alpha on validation only (0.01 grid).
-3. Selects Historical/LightGBM/Transformer weights on validation only (0.05 simplex grid).
-4. Selects probability thresholds on validation midnight horizons.
-5. Loads test predictions only after blend weights and operating thresholds are fixed.
-6. Applies fixed weights/thresholds to test.
-7. Regenerates comparison tables, risk sweeps, Pareto flags, stable-window results, 2,000 paired daily-block bootstrap summaries, calibration diagnostics, predictions, and figures.
+The external folder historically expected by the pipeline contains 'Bldg59_clean data', a cleaned release rather than original raw acquisition streams. It may be placed under:
 
-Key deterministic checks:
+    doi_10_7941_D1N33Q__v20220202/Building_59/Bldg59_clean data/
 
-- primary weights: `0.15 / 0.60 / 0.25`
-- primary validation AUPRC: `0.72863796`
-- primary test Empty AUPRC: `0.85136961`
-- primary 10% threshold: `0.875`
-- primary test safe opportunity: `490.1464 kWh`
-- primary test conflicts: `0/259`
+The command below is deliberately a **legacy replay only**. It requires an explicit acknowledgement, writes outside the canonical saved-output directories, and must not be cited as a new empirical/prospective result:
 
-Use `--skip-figures` for tables/predictions only or `--bootstrap-reps N` for a faster diagnostic run.
+    python3 scripts/run_all.py --legacy-cleaned-replay
 
-## 4. Reproduce the exploratory decision-aware searches
+## Empirical rerun requirements
 
-These commands use the same committed saved prediction and load-proxy exports.
-They do not train a model or require raw Dryad data.
+Do not use `scripts/run_all.py` for this path. Build a new protocol-locked empirical runner only after:
 
-Run the joint weight-threshold search:
+1. obtain original/provenance-tagged streams and observation-end timestamps;
+2. declare and test the bin closure, label, and availability convention;
+3. correct deep seed setting before model construction;
+4. pin packages and record data hashes;
+5. quarantine a later untouched test period;
+6. retrain, select only on training/validation, and evaluate exactly once.
 
-```bash
-python scripts/run_decision_aware_joint_search.py
-```
-
-This command:
-
-1. Audits the aligned validation/test prediction exports and processed load proxy.
-2. Evaluates 231 validation weight vectors by 37 thresholds, or 8,547 pairs.
-3. Selects the unconstrained and 99%-AUPRC-floor decision candidates on validation only.
-4. Verifies that the canonical `0.15/0.60/0.25 @ 0.875` reference is reproduced.
-5. Loads test only after every candidate is fixed, then writes descriptive test results.
-
-Run the later window-aware constraint study:
-
-```bash
-python scripts/run_window_aware_decision_search.py
-```
-
-This command reuses the validation-only joint surface, applies the declared
-fully-safe-window and AUPRC floors, freezes the future challenger, and writes the
-current-test comparison as a retrospective diagnostic. It does not turn that
-already-inspected test period into fresh confirmation.
-
-Key outputs:
-
-- `results/decision_aware_joint_weight_threshold_grid.csv`
-- `results/decision_aware_joint_selected_candidates.csv`
-- `results/decision_aware_joint_auprc_floor_sensitivity.csv`
-- `results/window_aware_joint_selection_grid.csv`
-- `results/window_aware_selected_candidates.csv`
-- `reports/decision_aware_joint_search_report.md`
-- `reports/window_aware_decision_search_report.md`
-
-The tabular and Markdown outputs are deterministic from the committed inputs.
-PNG pixels can differ across Matplotlib/Pillow versions even when the underlying
-numbers and figure dimensions agree; compare the CSV values rather than requiring
-cross-version PNG hashes.
-
-## 5. Regenerate all figures from saved results
-
-```bash
-python scripts/generate_figures.py
-python scripts/generate_presentation_figures.py
-```
-
-`generate_figures.py` regenerates the established base figures and the integrated hybrid figures. `generate_presentation_figures.py` retains the earlier LightGBM/Historical presentation artifacts for provenance and comparison.
-
-The decision-aware and window-aware figures are generated by their dedicated
-commands in Section 4.
-
-## 6. Full raw-data retraining
-
-Raw data are not committed. Follow `DATA.md` and place:
-
-```text
-doi_10_7941_D1N33Q__v20220202/
-  Building_59/
-    Bldg59_clean data/
-      occ.csv
-      wifi.csv
-      site_weather.csv
-      zone_temp_interior.csv
-      ele.csv
-      zone_co2.csv
-```
-
-Then run:
-
-```bash
-python scripts/run_all.py
-```
-
-This performs data preparation, base-model training, validation selection, held-out evaluation, prediction export, hybrid selection, uncertainty analysis, and figure generation.
-
-## 7. Canonical inputs and outputs
-
-Hybrid inputs:
-
-- `results/forecast_predictions_validation_all_models.csv`
-- `results/forecast_predictions_test_all_models.csv`
-- `results/processed_lbnl_15min_pacific.csv`
-
-Primary outputs:
-
-- `results/canonical_model_comparison.csv`
-- `results/canonical_policy_10pct.csv`
-- `results/hybrid_candidate_registry.csv`
-- `results/hybrid_lineage.csv`
-- `results/hybrid_primary_weight_search.csv`
-- `results/hybrid_risk_opportunity_threshold_sweeps.csv`
-- `results/hybrid_uncertainty_daily_block_bootstrap.csv`
-- `results/canonical_uncertainty_summary.csv`
-- `predictions/hybrid_ensemble_validation_predictions.csv`
-- `predictions/hybrid_ensemble_test_predictions.csv`
-
-The root reporting notebook reads saved outputs and is intentionally not the source of executable research logic.
-
-## 8. Reproducibility limits
-
-- The saved-output hybrid is deterministic given the committed CSV inputs and supported libraries.
-- The joint and window-aware searches are complete saved-output studies, but their challengers remain exploratory until evaluated once on a genuinely new locked period.
-- Exact base-model retraining can vary across CPU/GPU, PyTorch, LightGBM, and BLAS versions even with fixed seeds.
-- Full raw-data retraining was not run during the integration because the external Dryad directory is absent.
-- Hybrid-specific per-seed and rolling-origin results require new saved predictions or retraining; they cannot be inferred from aggregate exports.
-- No additional-data validation is attempted by the supported saved-output commands.
+Without these steps, saved-output regeneration and a legacy cleaned-release replay cannot establish a prospective operational claim.

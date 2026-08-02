@@ -34,29 +34,35 @@ EXAMPLE_FIGURE_PATH = FIGURES_DIR / "example_day_lightgbm_recommendation.png"
 SAME_DAY_FIGURE_PATH = FIGURES_DIR / "lightgbm_vs_historical_same_day_recommendation.png"
 SAME_DAY_SUMMARY_PATH = RESULTS_DIR / "lightgbm_vs_historical_same_day_summary.csv"
 CAPTION = (
-    "Conflict rate alone measures safety; safe kWh measures captured operational opportunity. "
-    "Historical Average is the most conservative policy, while LightGBM captures more usable "
-    "HVAC-and-lighting opportunity under the selected 10% policy."
+    "Empirical camera-label conflict is reported separately from offline camera-label-empty "
+    "processed-load-proxy overlap. Historical Average is conservative, while LightGBM has more "
+    "recorded HVAC-plus-lighting proxy overlap under the validation-selected 10% cutoff."
 )
 EXAMPLE_CAPTION = (
-    "Example held-out test day showing how LightGBM probabilities are converted into stable "
-    "empty-window recommendations. Safe opportunity is counted only when the model recommends "
-    "empty, the space is actually empty, and recorded HVAC plus lighting load is present."
+    "Example held-out post-bin test day (00:00-labelled completed input bin; effective 00:15 boundary) showing how LightGBM Empty scores are converted into stable "
+    "empty-window recommendations. Proxy overlap is counted only when a recommendation is "
+    "subsequently camera-label-empty and processed HVAC-plus-lighting load is present."
 )
-MODEL_ORDER = ["Historical Average", "LightGBM", "Random Forest", "Transformer", "DLinear"]
+MODEL_ORDER = [
+    "Historical Average",
+    "LightGBM",
+    "Random Forest",
+    "Compact Transformer encoder (legacy Transformer)",
+    "Direct linear occupancy baseline (legacy DLinear)",
+]
 MODEL_LABELS = {
     "historical average": "Historical Average",
     "lightgbm": "LightGBM",
     "random forest": "Random Forest",
-    "transformer": "Transformer",
-    "dlinear": "DLinear",
+    "transformer": "Compact Transformer encoder (legacy Transformer)",
+    "dlinear": "Direct linear occupancy baseline (legacy DLinear)",
 }
 MODEL_COLORS = {
     "Historical Average": "#4C78A8",
     "LightGBM": "#F58518",
     "Random Forest": "#54A24B",
-    "Transformer": "#B279A2",
-    "DLinear": "#E45756",
+    "Compact Transformer encoder (legacy Transformer)": "#B279A2",
+    "Direct linear occupancy baseline (legacy DLinear)": "#E45756",
 }
 
 
@@ -73,8 +79,8 @@ def inspect_test_prediction_file() -> pd.DataFrame:
     required = {
         "date/time": "target_time",
         "actual occupancy label": "actual_occupied",
-        "LightGBM predicted Empty probability": "lightgbm_empty_probability",
-        "Historical Average predicted Empty probability": "historical_average_empty_probability",
+        "LightGBM Empty-score column": "lightgbm_empty_probability",
+        "Historical Average Empty-score column": "historical_average_empty_probability",
     }
     missing = [f"{label} ({column})" for label, column in required.items() if column not in predictions]
 
@@ -139,18 +145,18 @@ def generate_stable_window_figure(stable: pd.DataFrame) -> Path:
             **style,
         )
 
-    axes[0].set_title("A. Safety")
-    axes[0].set_ylabel("Test occupancy conflict rate")
+    axes[0].set_title("A. Empirical camera-label conflict")
+    axes[0].set_ylabel("Held-out camera-label conflict rate")
     axes[0].yaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
     axes[1].set_title("B. Captured opportunity")
-    axes[1].set_ylabel("Safe shiftable-load opportunity (kWh)")
+    axes[1].set_ylabel("Offline label-empty\nload-proxy overlap (kWh)")
     for ax in axes:
         ax.set_xlabel("Minimum empty-window length (hours)")
         ax.set_xticks(sorted(plot["min_window_length_hours"].dropna().unique()))
         ax.legend(title="Model", fontsize=9, title_fontsize=10, frameon=True)
         ax.grid(axis="y", alpha=0.25)
 
-    fig.suptitle("Stable-window sensitivity: safety and captured opportunity", y=0.98)
+    fig.suptitle("Stable-window sensitivity: empirical conflict and proxy overlap", y=0.98)
     fig.text(0.5, 0.025, CAPTION, ha="center", va="bottom", fontsize=9.5, wrap=True)
     fig.subplots_adjust(left=0.08, right=0.98, top=0.83, bottom=0.22, wspace=0.24)
     STABLE_FIGURE_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -181,7 +187,7 @@ def generate_presentation_table(stable: pd.DataFrame) -> tuple[Path, pd.DataFram
     table = selected[source_columns].copy().rename(
         columns={
             "min_window_length_hours": "minimum_empty_window_length_hours",
-            "safe_shiftable_load_kwh": "safe_shiftable_load_opportunity_kwh",
+            "safe_shiftable_load_kwh": "offline_camera_label_empty_load_proxy_overlap_kwh",
             "number_of_recommended_windows": "recommended_windows",
             "number_of_safe_windows": "safe_windows",
             "average_window_duration": "average_window_duration_hours",
@@ -285,7 +291,7 @@ def generate_example_day_figure() -> tuple[Path, dict[str, object]]:
             chosen = day
             break
     if chosen is None:
-        raise ValueError("No test day has both a stable LightGBM recommendation and nonzero safe opportunity")
+        raise ValueError("No test day has both a stable LightGBM recommendation and nonzero label-empty proxy overlap")
 
     recommended = chosen["recommended"].to_numpy(dtype=bool)
     actual_empty = chosen["actual_empty"].to_numpy(dtype=bool)
@@ -296,29 +302,33 @@ def generate_example_day_figure() -> tuple[Path, dict[str, object]]:
 
     sns.set_theme(style="whitegrid")
     fig, axes = plt.subplots(3, 1, figsize=(14, 10), sharex=True)
-    axes[0].step(times, chosen["lightgbm_empty_probability"], where="post", color=MODEL_COLORS["LightGBM"], linewidth=2, label="LightGBM predicted Empty probability")
+    axes[0].step(times, chosen["lightgbm_empty_probability"], where="post", color=MODEL_COLORS["LightGBM"], linewidth=2, label="LightGBM Empty score (uncalibrated)")
     axes[0].axhline(threshold, color="black", linestyle="--", linewidth=1.3, label=f"Selected threshold ({threshold:.2f})")
     _shade_mask(axes[0], times, recommended, "#72B7B2", "Recommended stable empty window", 0.28)
-    axes[0].set_ylabel("Empty probability")
+    axes[0].set_ylabel("Empty score\n(uncalibrated)")
     axes[0].set_ylim(-0.02, 1.05)
     axes[0].legend(loc="upper right", fontsize=9)
 
     axes[1].step(times, actual_empty.astype(int), where="post", color="#4C78A8", linewidth=2, label="Actual Empty label")
-    _shade_mask(axes[1], times, safe, "#54A24B", "Safe recommended interval", 0.38)
+    _shade_mask(axes[1], times, safe, "#54A24B", "Recommended and camera-label-empty interval", 0.38)
     _shade_mask(axes[1], times, conflict, "#E45756", "Conflict interval", 0.42)
     axes[1].set_ylabel("Actual Empty")
     axes[1].set_yticks([0, 1], labels=["Occupied", "Empty"])
     axes[1].legend(loc="upper right", fontsize=9)
 
     axes[2].step(times, load_kw, where="post", color="#7A5195", linewidth=1.8, label="HVAC + lighting load")
-    axes[2].fill_between(times, 0, load_kw, where=safe, step="post", color="#54A24B", alpha=0.45, label="Safe opportunity")
-    axes[2].set_ylabel("Controllable load (kW)")
+    axes[2].fill_between(times, 0, load_kw, where=safe, step="post", color="#54A24B", alpha=0.45, label="Label-empty proxy overlap")
+    axes[2].set_ylabel("Processed load\nproxy (kW)")
     axes[2].set_xlabel("Local time (America/Los_Angeles)")
     axes[2].legend(loc="upper right", fontsize=9)
     axes[2].xaxis.set_major_formatter(mdates.DateFormatter("%H:%M", tz=times.dt.tz))
 
     date_label = times.iloc[0].strftime("%Y-%m-%d")
-    fig.suptitle(f"LightGBM stable empty-window recommendations: {date_label}", y=0.985)
+    fig.suptitle(
+        f"LightGBM stable empty-window recommendations: {date_label} "
+        "(00:00-labelled input bin; effective 00:15)",
+        y=0.985,
+    )
     fig.text(0.5, 0.015, EXAMPLE_CAPTION, ha="center", va="bottom", fontsize=9.5, wrap=True)
     fig.subplots_adjust(left=0.1, right=0.98, top=0.93, bottom=0.12, hspace=0.14)
     EXAMPLE_FIGURE_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -395,7 +405,7 @@ def generate_same_day_comparison(
         )
 
     selection_rule = (
-        "first complete held-out test day whose LightGBM Empty probability is at or above "
+        "first complete held-out test day whose LightGBM Empty score is at or above "
         "its validation-selected 10% threshold for at least four consecutive 15-minute intervals"
     )
     chosen_date = chosen["target_time"].iloc[0].strftime("%Y-%m-%d")
@@ -486,14 +496,14 @@ def generate_same_day_comparison(
             [0],
             color=MODEL_COLORS["LightGBM"],
             linewidth=2.2,
-            label="LightGBM predicted Empty probability",
+            label="LightGBM Empty score (uncalibrated)",
         ),
         Line2D(
             [0],
             [0],
             color=MODEL_COLORS["Historical Average"],
             linewidth=2.2,
-            label="Historical Average predicted Empty probability",
+            label="Historical Average Empty score (uncalibrated)",
         ),
         Line2D(
             [0],
@@ -504,7 +514,7 @@ def generate_same_day_comparison(
             label="Selected Empty threshold",
         ),
         Patch(facecolor="gray", alpha=0.20, label="Actual occupancy"),
-        Patch(facecolor="#54A24B", alpha=0.38, label="Recommended safe empty window"),
+        Patch(facecolor="#54A24B", alpha=0.38, label="Recommended all-camera-label-empty window"),
     ]
     if load_available:
         legend_handles.append(
@@ -529,7 +539,7 @@ def generate_same_day_comparison(
             times,
             masks["safe"],
             "#54A24B",
-            "Recommended safe empty window",
+            "Recommended all-camera-label-empty window",
             0.38,
         )
         _shade_mask(
@@ -546,7 +556,7 @@ def generate_same_day_comparison(
             where="post",
             color=color,
             linewidth=2.2,
-            label="Predicted Empty probability",
+            label="Predicted Empty score (uncalibrated)",
         )
         ax.axhline(
             thresholds[model],
@@ -556,14 +566,14 @@ def generate_same_day_comparison(
             label="Selected Empty threshold",
         )
         ax.set_ylim(-0.02, 1.05)
-        ax.set_ylabel("Empty probability")
+        ax.set_ylabel("Empty score\n(uncalibrated)")
         ax.set_title(model, loc="left", fontweight="bold")
 
     if load_available:
         load_kw = chosen["controllable_load_kw"].to_numpy(dtype=float)
         axes[2].step(times, load_kw, where="post", color="#7A5195", linewidth=1.8)
         axes[2].set_ylabel("HVAC + lighting\nload proxy (kW)")
-        axes[2].set_title("Recorded controllable-load proxy", loc="left", fontweight="bold")
+        axes[2].set_title("Processed HVAC-plus-lighting load proxy", loc="left", fontweight="bold")
 
     axes[-1].set_xlabel("Local time (America/Los_Angeles)")
     axes[-1].xaxis.set_major_formatter(mdates.DateFormatter("%H:%M", tz=times.dt.tz))
@@ -585,7 +595,7 @@ def generate_same_day_comparison(
         (
             f"Held-out test date: {chosen_date}. Historical Average follows the regular schedule; "
             "LightGBM identifies additional high-confidence stable empty periods. "
-            "No conflict windows occur on this selected example day."
+            "No camera-label-conflict windows occur on this selected example day."
         ),
         ha="center",
         va="bottom",

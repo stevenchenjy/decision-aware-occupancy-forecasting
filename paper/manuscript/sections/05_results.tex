@@ -1,0 +1,45 @@
+\section{Results}
+
+\subsection{Forecast Quality on Overlapping Test Forecasts}
+
+Table~\ref{tab:primary-comparison} reports the three canonical models central to the paper. The primary hybrid has the highest all-overlap Empty AUPRC point estimate (0.8514), followed closely by the historical average (0.8497). LightGBM is 0.8382. The hybrid also has the lowest reported Brier score among these three models (0.0928), but this is a diagnostic for uncalibrated scores rather than evidence of calibrated probabilities. These values summarize 388,032 overlapping forecast rows from 4,042 anchors and should not be interpreted as 43-horizon policy estimates or as prospective real-time performance. The extended seven-model comparison is retained in Appendix~A for completeness, but the test-ranked balanced hybrid is intentionally omitted from both tables.
+
+\input{tables/table_primary_comparison}
+
+The strong schedule baseline is a substantive result. It indicates that weekday and time-of-day structure in this building carries much of the Empty-class predictive signal. The hybrid's point AUPRC margins are small: 0.0017 over the historical baseline and 0.0132 over LightGBM. Section~V-C therefore evaluates these differences at the daily-horizon level rather than treating their ranking in Table~\ref{tab:primary-comparison} as decisive evidence of superiority.
+
+\subsection{Validation-Selection Stability}
+
+The canonical weight vector is a nominal grid maximum, not a uniquely identified optimum. Its validation AUPRC is 0.728638; the runner-up differs by only 0.000032, and eight of the 231 legal vectors lie within 0.0005. Table~\ref{tab:selection-stability} gives deliberately separate, validation-only perturbation diagnostics. The blend diagnostic restricts itself to 39 non-overlapping validation policy horizons rather than silently reusing test data, so it is not an alternative selection rule for the canonical all-overlap analysis. It nonetheless shows that ranking nearby blends is sensitive to validation-horizon perturbation. Threshold selection is also sensitive in daily-block bootstrap resamples. These diagnostics support bounded interpretation of the reported weights and threshold; they do not justify substituting a bootstrap winner after seeing the fixed test outcomes.
+
+\input{tables/table_selection_stability}
+
+\subsection{Validation-Selected Policy Outcomes}
+
+Table~\ref{tab:policy-comparison} and Fig.~\ref{fig:policy} report the policy scope: 43 non-overlapping test horizons and 4,128 15-min target intervals. The horizons are anchored by midnight-labelled completed input bins and have an effective 00:15 availability boundary. Every listed threshold met the empirical validation $10\%$ interval-conflict condition. The primary hybrid used $\tau=0.875$ after a validation conflict rate of 8.75\%. On test, it recommended 259 intervals. All 259 were subsequently camera-label-empty. Those intervals formed 14 recommended windows, all camera-label-safe under the observed label, and coincided with 490.1~kWh of \safeopportunity{} (11.40~kWh/horizon-day).
+
+\input{tables/table_policy_comparison}
+
+LightGBM produced a nearly equal 493.9~kWh opportunity, but 11 of 265 recommended intervals were camera-labeled occupied (4.15\%) and three of 19 recommended windows contained an occupancy conflict. The historical average was equally conflict-free under this label in the test period but coincided with much less processed load-proxy opportunity (94.6~kWh). Figure~\ref{fig:policy} is deliberately restricted to these three pre-specified models; it does not display test-ranked or retrospective exploratory candidates.
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_policy_comparison.png}
+  \caption{Fixed held-out policy outcomes for the schedule baseline, LightGBM, and the validation-selected primary hybrid. Thresholds were selected on 39 validation daily horizons to maximize offline safe load opportunity subject to an empirical interval conflict rate no greater than 10\%; the plotted values are one post-bin evaluation on 43 test horizons. ``Safe'' means recommended and subsequently camera-label-empty, not physical absence, a verified load shift, or energy saving.}
+  \label{fig:policy}
+\end{figure*}
+
+\subsection{Conditional Uncertainty and Diagnostics}
+
+The daily-block uncertainty results in Table~\ref{tab:uncertainty} condition on the previously selected weights and thresholds. The primary hybrid's daily-horizon AUPRC is 0.8522 with a 95\% percentile interval of [0.7918, 0.9016]. This differs from the all-overlap value in Table~\ref{tab:primary-comparison} because the aggregation unit differs. The paired AUPRC intervals for primary minus LightGBM and primary minus historical average both cross zero. The paired safe-opportunity interval also crosses zero for primary minus LightGBM, although the primary-minus-historical comparison is positive over its reported interval. Figure~\ref{fig:uncertainty} makes the contrast explicit rather than visually magnifying the small AUPRC point differences.
+
+\input{tables/table_uncertainty}
+
+\begin{figure*}[!t]
+  \centering
+  \includegraphics[width=\textwidth]{fig_paired_uncertainty.png}
+  \caption{Paired 95\% daily-block bootstrap intervals (2,000 resamples) for the primary hybrid minus each canonical baseline. The dashed line denotes no difference. Intervals condition on fixed, validation-selected model weights and operating thresholds; they do not include model-selection uncertainty.}
+  \label{fig:uncertainty}
+\end{figure*}
+
+The primary hybrid's held-out score diagnostics are Brier score 0.0928, log loss 0.2984, and 10-bin quantile ECE 0.0253. No recalibration was applied. At the fixed primary threshold, a one-hour or two-hour minimum window retains 490.1~kWh and zero observed camera-label conflicts, while a four-hour requirement retains 407.8~kWh and 11 fully camera-label-safe windows. These are sensitivity results at a fixed threshold, not re-optimized policies. Finally, every observed primary-hybrid camera-label conflict block is zero, so a nonparametric bootstrap also returns a zero conflict interval. Under an unverified independent-trial assumption, zero events yield one-sided 95\% upper bounds of 1.15\% for 259 intervals and 19.3\% for 14 windows. Intervals and windows are clustered, so neither bound is a deployment-safety guarantee.

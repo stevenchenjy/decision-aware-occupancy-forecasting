@@ -1,0 +1,18 @@
+\begin{table*}[!t]
+\caption{Conditional daily-block uncertainty from 2,000 paired bootstrap resamples of 43 non-overlapping test horizons. Daily-horizon AUPRC is not the all-overlap AUPRC in Table~\ref{tab:primary-comparison}. All intervals condition on selected weights and thresholds.}
+\label{tab:uncertainty}
+\centering
+\small
+\begin{tabular}{llrrr}
+\toprule
+Estimate type & Quantity & Point estimate & 95\% low & 95\% high \\
+\midrule
+Primary model & Daily-horizon Empty AUPRC & 0.8522 & 0.7918 & 0.9016 \\
+Primary model & Safe opportunity (kWh) & 490.1 & 153.1 & 966.7 \\
+Paired contrast & Primary $-$ LightGBM AUPRC & +0.0163 & -0.0050 & +0.0426 \\
+Paired contrast & Primary $-$ historical AUPRC & +0.0042 & -0.0304 & +0.0377 \\
+Paired contrast & Primary $-$ LightGBM opportunity (kWh) & -3.8 & -208.2 & +174.6 \\
+Paired contrast & Primary $-$ historical opportunity (kWh) & +395.5 & +127.0 & +786.2 \\
+\bottomrule
+\end{tabular}
+\end{table*}

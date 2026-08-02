@@ -23,8 +23,12 @@ def make_lightgbm(seed=42, n_estimators=320):
         learning_rate=0.05,
         num_leaves=31,
         min_child_samples=50,
-        subsample=0.85,
         colsample_bytree=0.85,
+        # LightGBM enables row bagging only when subsample_freq is positive.
+        # State the inactive/default behavior explicitly rather than implying
+        # that a configured fraction is used.
+        subsample=1.0,
+        subsample_freq=0,
         reg_lambda=1.0,
         class_weight="balanced",
         random_state=seed,

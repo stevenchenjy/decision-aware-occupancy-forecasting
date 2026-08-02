@@ -3,8 +3,8 @@ chronological_week_boundary_split,pass,"Train boundary=2018-11-26 00:00:00-08:00
 train_to_validation_gap_hours,pass,24.25
 validation_to_test_gap_hours,pass,24.25
 train_only_scaling,pass,Deep-model normalization statistics are fit using rows before the train boundary only; tree models use no scaler.
-leakage_safe_preprocessing,pass,"Missing sensor/load values use causal forward-fill only plus fixed 0.0 for leading gaps; no interpolation, backfill, or test-set statistics."
+post_import_row_order_preprocessing,pass,"After import, missing sensor/load values use forward-fill from preceding rows plus fixed 0.0 for leading gaps; no new interpolation, backfill, or test-set statistics. This does not establish upstream imputation provenance."
 historical_average_train_only,pass,Historical averages use occupied labels before train boundary only.
 rolling_features_shift,pass,Rolling occupancy/count features are shifted and exclude the current/future labels: arr[anchor-window:anchor].
-future_sensor_values,pass,Known future inputs are calendar/time only; sensor features are issue-time observations repeated across horizon.
+future_sensor_rows,pass,Known future inputs are calendar/time only; sensor features come from the completed anchor bin or preceding rows and are repeated across the horizon. Their effective availability is post-bin.
 controllable_load_predictor_exclusion,pass,"HVAC, lighting, MELS, and total south electricity are excluded from predictors and used only for opportunity calculation."

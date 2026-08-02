@@ -6,6 +6,11 @@ def interval_kwh(power_kw, interval_hours=0.25):
 
 
 def safe_shiftable_load_opportunity(y_empty, recommend_empty, controllable_kwh):
+    """Return legacy-named offline load-proxy accounting fields.
+
+    The function does not establish that any recorded meter value is
+    controllable or that a recommendation would save energy.
+    """
     y_empty = np.asarray(y_empty).astype(bool)
     rec = np.asarray(recommend_empty).astype(bool)
     kwh = np.asarray(controllable_kwh, dtype=float)
@@ -21,6 +26,7 @@ def safe_shiftable_load_opportunity(y_empty, recommend_empty, controllable_kwh):
 
 
 def controllability_scenarios(base_safe_kwh):
+    """Return hypothetical accounting multipliers, not verified control ranges."""
     return {
         "Scenario A: 100% selected load controllable": base_safe_kwh,
         "Scenario B: 50% controllable-load assumption": base_safe_kwh * 0.5,

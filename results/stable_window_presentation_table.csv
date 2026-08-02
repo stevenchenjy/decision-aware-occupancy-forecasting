@@ -1,4 +1,4 @@
-﻿model,minimum_empty_window_length_hours,selected_threshold,test_occupancy_conflict_rate,safe_shiftable_load_opportunity_kwh,recommended_windows,safe_windows,average_window_duration_hours
+﻿model,minimum_empty_window_length_hours,selected_threshold,test_occupancy_conflict_rate,offline_camera_label_empty_load_proxy_overlap_kwh,recommended_windows,safe_windows,average_window_duration_hours
 Historical Average,1.0,0.95,0.0,94.623047827,12,12,1.375
 Historical Average,2.0,0.95,0.0,0.0,0,0,0.0
 Historical Average,4.0,0.95,0.0,0.0,0,0,0.0

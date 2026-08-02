@@ -1,0 +1,16 @@
+\begin{table*}[!t]
+\caption{Validation-selected one-hour stable-window policies evaluated on 43 non-overlapping test horizons. Anchors are midnight-labelled completed input bins with effective 00:15 boundaries. Every threshold maximizes validation safe opportunity subject to empirical validation interval conflict $\leq10\%$. ``Safe'' means recommended and subsequently camera-label-empty. Opportunity is an offline processed-load-proxy overlap, not measured energy savings.}
+\label{tab:policy-comparison}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccccccc}
+\toprule
+Model & $\tau$ & Val. conflict & Test conflict & Safe opportunity & Safe/rec. intervals & Safe/rec. windows & kWh/day \\
+\midrule
+Historical average & 0.950 & 8.33\% & 0.00\% (0/66) & 94.6 & 66/66 & 12/12 & 2.20 \\
+LightGBM & 0.950 & 9.61\% & 4.15\% (11/265) & 493.9 & 254/265 & 16/19 & 11.49 \\
+Primary hybrid & 0.875 & 8.75\% & 0.00\% (0/259) & 490.1 & 259/259 & 14/14 & 11.40 \\
+\bottomrule
+\end{tabular}
+\end{table*}

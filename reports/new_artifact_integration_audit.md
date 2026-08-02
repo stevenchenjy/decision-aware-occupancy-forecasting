@@ -1,5 +1,7 @@
 # NEW Artifact Integration Audit
 
+> **Historical audit superseded for final interpretation by [final_self_audit_2026-08-01.md](final_self_audit_2026-08-01.md).** Its no-leakage/causal and timestamp conclusions do not account for left-labelled completed bins or upstream cleaned-release imputation.
+
 ## Material Passport
 
 - Origin Skill: academic-research-suite / experiment-agent

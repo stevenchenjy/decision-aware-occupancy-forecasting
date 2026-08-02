@@ -1,4 +1,4 @@
-﻿todo,detail
-decision_focused_loss,Total Loss = BCE occupancy loss + lambda_fp * false-empty penalty + lambda_miss * missed-safe-opportunity penalty.
-rl_environment_adapter,"Expose forecast state, threshold/action, and safe_shiftable_load_opportunity reward for sequential control simulation."
-appendix_advanced_models,"Run TFT/PatchTST only with matched splits, feature inputs, seeds, and tuning budget before comparing in main text."
+todo,detail
+decision_focused_loss,Future study: Total Loss = BCE occupancy loss + lambda_fp * occupied-label recommendation penalty + lambda_miss * missed load-proxy-overlap penalty.
+rl_environment_adapter,Future study: expose forecast state hypothetical action and offline load-proxy-overlap objective in a physical control simulator.
+appendix_advanced_models,Run TFT/PatchTST only with matched splits feature inputs seeds and tuning budget before comparing in main text.

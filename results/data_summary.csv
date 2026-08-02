@@ -1,2 +1,2 @@
-﻿resampled_rows,start_local,end_local,frequency,timezone,target_occupied_definition,occupied_rate,empty_rate,mean_occupant_count,max_occupant_count
-26413,2018-05-22 00:00:00-07:00,2019-02-21 02:00:00-08:00,15min,America/Los_Angeles,occupied=1 if max south-zone camera count > 0.0 in the 15-minute bin,0.6888653314655662,0.3111346685344338,11.435998687514989,123.0
+resampled_rows,start_local,end_local,frequency,resample_bin_convention,timezone,target_occupied_definition,occupied_rate,empty_rate,mean_occupant_count,max_occupant_count
+26413,2018-05-22 00:00:00-07:00,2019-02-21 02:00:00-08:00,15min,"left-closed, left-labelled [t, t + 15 min); input-bin values are available only at bin close",America/Los_Angeles,occupied=1 if max south-zone camera count > 0.0 in the 15-minute bin,0.6888653314655662,0.3111346685344338,11.435998687514989,123.0

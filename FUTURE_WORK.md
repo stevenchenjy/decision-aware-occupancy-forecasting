@@ -1,29 +1,16 @@
-# Future Work
+# Required Next Research Phase
 
-The scriptable pipeline, hybrid integration, daily-block uncertainty, calibration diagnostics, and presentation figures are now implemented. Remaining priorities are:
+The existing saved-output phase is complete, but its final verdict is **requires empirical rerun**. Do not spend the current test set on further candidate selection.
 
-The current no-additional-data phase is complete: the joint weight-threshold
-surface, window-aware constraints, candidate freeze, retrospective diagnostics,
-reproduction commands, claim boundaries, and future evaluation protocol are all
-documented. Items below that require new predictions, raw data, or an untouched
-period are deliberately deferred rather than approximated from the already-inspected
-validation/test exports.
+| Priority | Requirement | Why it comes first |
+|---:|---|---|
+| 1 | Obtain source streams with observation-end timestamps and per-value imputation lineage | Establish whether inputs were actually available at a decision boundary |
+| 2 | Declare left/right bin convention and store observation-end, issue, target-start, and target-end times | Remove the 00:00-label ambiguity |
+| 3 | Set deep seeds before construction; lock code, data hashes, and packages | Make retraining reproducible |
+| 4 | Retrain base models; select weights/threshold only on training/validation | Rebuild the empirical evidence without current-test tuning |
+| 5 | Evaluate once on a later untouched period or independent building | Test temporal/external validity |
+| 6 | Fit calibration/conformal method on validation if probability/risk claims are needed | Support bounded uncertainty claims |
+| 7 | Add staleness/missingness sensitivity for Wi-Fi and load proxy | Test sensor/proxy robustness |
+| 8 | Use simulation or intervention with comfort/equipment constraints | Test energy and control claims rather than opportunity overlap |
 
-| Priority | Improvement | Missing requirement | Benefit |
-|---:|---|---|---|
-| 1 | Hybrid multiple-seed robustness | Save aligned validation/test component predictions for every seed, then blend within seed | Separates ensemble gain from seed luck |
-| 2 | Hybrid rolling-origin validation | Retrain Transformer and tabular components on matched rolling folds | Tests temporal stability of the complete primary model |
-| 3 | Nested or pre-registered ensemble selection | Define architecture and weight grid before final test access; ideally use nested temporal validation | Removes residual researcher-degrees-of-freedom concern |
-| 4 | Calibrated/conformal risk control | Fit calibration or conformal method on validation only | Gives more defensible finite-sample risk statements |
-| 5 | Longer and cross-building evaluation | Additional zones, buildings, seasons, and years | Tests external validity and rare conflicts |
-| 6 | Counterfactual energy evaluation | EnergyPlus/Sinergym model or intervention data | Converts opportunity into defensible savings estimates |
-| 7 | Comfort and occupant-response constraints | Setpoint response, PMV/PPD, feedback, and control limits | Evaluates operational acceptability |
-| 8 | True decision-aware training | Predeclared false-empty/missed-opportunity loss and matched tuning budget | Aligns model training with the policy objective |
-| 9 | Model serialization and inference contract | Versioned weights, feature schema, environment, and monitoring plan | Supports repeatable deployment research |
-| 10 | Test-set quarantine workflow | Immutable test artifact and automated selection audit | Prevents accidental test-guided iteration |
-
-For the current professor-facing package, present the canonical result first and
-the decision-aware/window-aware work as an exploratory appendix. If additional
-data work resumes later, the first empirical priority is the frozen one-shot
-evaluation protocol, followed by matched rolling-origin and per-seed evidence—not
-further candidate search on the current test set.
+The previously frozen decision-aware/window-aware candidates may be evaluated once in the new protocol, but must not be promoted using their historical test diagnostics.

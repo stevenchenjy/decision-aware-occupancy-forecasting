@@ -8,6 +8,7 @@ from src.decision_aware_joint_search import (
     CANDIDATE_LABELS,
     GRID_COLUMNS,
     evaluate_fixed_candidates_on_test,
+    run_decision_aware_joint_search,
     select_decision_optimal_candidate,
     select_validation_candidates,
     simplex_weight_grid,
@@ -72,6 +73,14 @@ def test_candidate_selection_interface_excludes_test_predictions():
     assert "evaluate_fixed_candidates_on_test" not in source
 
 
+def test_joint_runner_freezes_validation_candidates_before_audit_or_test_load():
+    source = inspect.getsource(run_decision_aware_joint_search)
+    selection_position = source.index("candidates, sensitivity = select_validation_candidates(grid)")
+    audit_position = source.index("audit_text, sufficient = _audit_markdown")
+    test_load_position = source.index('test = _read_csv(results_dir / "forecast_predictions_test_all_models.csv")')
+    assert selection_position < audit_position < test_load_position
+
+
 def test_conflict_constraint_is_enforced():
     grid = pd.DataFrame(
         [
@@ -122,7 +131,7 @@ def test_candidate_selection_is_deterministic_after_all_declared_ties():
 
 
 def _test_prediction_frame() -> tuple[pd.DataFrame, pd.DataFrame]:
-    targets = pd.date_range("2019-01-09", periods=HORIZON_STEPS, freq="15min", tz="US/Pacific")
+    targets = pd.date_range("2019-01-09 00:15", periods=HORIZON_STEPS, freq="15min", tz="US/Pacific")
     y_empty = np.r_[np.ones(8, dtype=int), np.zeros(HORIZON_STEPS - 8, dtype=int)]
     frame = pd.DataFrame(
         {

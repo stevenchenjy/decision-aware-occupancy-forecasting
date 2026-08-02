@@ -1,5 +1,7 @@
 # No-Raw-Data Upgrade Report
 
+> **Historical saved-output report superseded for final interpretation by [final_self_audit_2026-08-01.md](final_self_audit_2026-08-01.md).** The current verdict is **requires empirical rerun** for prospective claims.
+
 Report date: 2026-07-10
 
 ## Scope and outcome

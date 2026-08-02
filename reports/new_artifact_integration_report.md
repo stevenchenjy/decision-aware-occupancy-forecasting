@@ -1,5 +1,7 @@
 # NEW Artifact Integration Report
 
+> **Historical integration report.** Use [final_self_audit_2026-08-01.md](final_self_audit_2026-08-01.md) for the final post-bin, source-provenance, model-name, and calibration wording.
+
 ## Material Passport
 
 - Origin Skill: academic-research-suite / experiment-agent

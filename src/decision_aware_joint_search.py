@@ -22,7 +22,7 @@ from src.hybrid_analysis import (
     DEFAULT_STABLE_STEPS,
     HORIZON_STEPS,
     THRESHOLDS,
-    controllable_kwh,
+    processed_load_proxy_kwh,
     daily_anchor_indices,
     input_alignment_audit,
     policy_row,
@@ -155,7 +155,7 @@ def build_validation_joint_grid(
 
     midnight_indices = daily_anchor_indices(validation)
     y_daily = reshape_daily(y_all, midnight_indices)
-    kwh_daily = reshape_daily(controllable_kwh(validation, processed), midnight_indices)
+    kwh_daily = reshape_daily(processed_load_proxy_kwh(validation, processed), midnight_indices)
     components_daily = np.stack(
         [
             reshape_daily(validation[column].to_numpy(dtype=float), midnight_indices)
@@ -282,7 +282,7 @@ def select_decision_optimal_candidate(
     auprc_floor_ratio: float | None,
     candidate_id: str,
 ) -> dict:
-    """Select by constrained safe opportunity with the declared tie-breaks."""
+    """Select by constrained offline load-proxy overlap with declared tie-breaks."""
     best_auprc = float(validation_grid["validation_empty_auprc"].max())
     eligible = validation_grid[
         (validation_grid["validation_occupancy_conflict_rate"] <= RISK_LIMIT)
@@ -312,7 +312,10 @@ def select_decision_optimal_candidate(
         kind="mergesort",
     ).iloc[0].copy()
     chosen["best_validation_empty_auprc"] = best_auprc
-    objective = "maximum validation safe opportunity under <=10% conflict"
+    objective = (
+        "maximum validation offline camera-label-empty load-proxy overlap "
+        "under <=10% empirical interval conflict"
+    )
     if auprc_floor_ratio is not None:
         objective += f" and >= {100 * auprc_floor_ratio:.0f}% of best validation AUPRC"
     return _candidate_from_row(chosen, candidate_id, objective, auprc_floor_ratio)
@@ -454,7 +457,7 @@ def evaluate_fixed_candidates_on_test(
     components_all = test[COMPONENT_COLUMNS].to_numpy(dtype=float)
     midnight_indices = daily_anchor_indices(test)
     y_daily = reshape_daily(y_all, midnight_indices)
-    kwh_daily = reshape_daily(controllable_kwh(test, processed), midnight_indices)
+    kwh_daily = reshape_daily(processed_load_proxy_kwh(test, processed), midnight_indices)
     components_daily = np.stack(
         [
             reshape_daily(test[column].to_numpy(dtype=float), midnight_indices)
@@ -546,8 +549,8 @@ def _audit_markdown(
             validate_split_integrity(validation, test)
             val_midnight = daily_anchor_indices(validation)
             test_midnight = daily_anchor_indices(test)
-            val_load = controllable_kwh(validation, processed)
-            test_load = controllable_kwh(test, processed)
+            val_load = processed_load_proxy_kwh(validation, processed)
+            test_load = processed_load_proxy_kwh(test, processed)
             alignment_rows = input_alignment_audit(validation, test, processed, predictions_dir)
             details = {
                 "validation_rows": len(validation),
@@ -601,7 +604,7 @@ def _audit_markdown(
 
     if details:
         scope_text = f"""
-| Scope | Rolling rows | 96-step anchors | Midnight policy horizons | Policy rows | Target-time range |
+| Scope | Rolling rows | 96-step anchors | Midnight-labelled post-bin policy horizons | Policy rows | Target-time range |
 |---|---:|---:|---:|---:|---|
 | Validation | {details['validation_rows']:,} | {details['validation_anchors']:,} | {details['validation_midnight_horizons']:,} | {details['validation_midnight_rows']:,} | `{details['validation_target_min']}` to `{details['validation_target_max']}` |
 | Held-out test | {details['test_rows']:,} | {details['test_anchors']:,} | {details['test_midnight_horizons']:,} | {details['test_midnight_rows']:,} | `{details['test_target_min']}` to `{details['test_target_max']}` |
@@ -639,7 +642,7 @@ The combined validation export is the only saved validation file that contains a
 ## Required columns
 
 - Validation/test predictions: `{', '.join(required_prediction_columns)}`.
-- Controllable load: `date_local`, `hvac_S`, and `lig_S` from the processed saved table.
+- Processed load proxy: `date_local`, `hvac_S`, and `lig_S` from the processed saved table.
 - The Empty label is `actual_empty_positive = 1 - actual_occupied`.
 - The interval load proxy is `max(hvac_S + lig_S, 0) * 0.25 h`, following the current implementation.
 
@@ -648,9 +651,9 @@ The combined validation export is the only saved validation file that contains a
 {scope_text}
 
 - Forecast Empty AUPRC uses every overlapping rolling prediction row in the relevant split.
-- Policy selection/evaluation uses non-overlapping midnight-anchored 96-step horizons only.
+- Policy selection/evaluation uses non-overlapping midnight-labelled completed-input-bin 96-step horizons only; a 00:00 label has an effective 00:15 availability boundary.
 - Validation ends at `{details.get('validation_target_max', 'unavailable')}`; test begins at `{details.get('test_target_min', 'unavailable')}`. The scopes do not overlap when the audit passes.
-- Controllable-load mapping covered {details.get('validation_load_rows', 'unavailable')} validation rows and {details.get('test_load_rows', 'unavailable')} test rows; the direct check found no missing timestamp matches.
+- Processed-load-proxy mapping covered {details.get('validation_load_rows', 'unavailable')} validation rows and {details.get('test_load_rows', 'unavailable')} test rows; the direct check found no missing timestamp matches.
 
 ## Prediction-export alignment
 
@@ -658,13 +661,13 @@ The combined validation export is the only saved validation file that contains a
 
 ## Current selection and recommendation logic
 
-- Weight search: all 231 legal Historical Average/Seasonal, LightGBM, and Transformer convex weights on the 0.05 simplex grid; select the maximum validation Empty AUPRC on all overlapping validation forecasts.
+- Weight search: all 231 legal Historical Average/Seasonal, LightGBM, and compact-Transformer score weights on the 0.05 simplex grid; select the maximum validation Empty AUPRC on all overlapping validation forecasts.
 - Canonical forecast-optimal weights: `0.15 / 0.60 / 0.25`; best saved validation Empty AUPRC `0.7286379575`.
-- Threshold grid: 37 Empty-probability thresholds from `0.05` through `0.95` in `0.025` increments.
-- Current 10% policy: maximize validation safe opportunity among thresholds with interval-level occupancy-conflict rate `<= 0.10`; use Empty recall as the current same-energy tie-break. The canonical hybrid threshold is `0.875`.
-- Stable recommendation: probability remains at or above threshold for at least four consecutive 15-minute intervals (one hour) within each midnight horizon. Every interval in a qualifying run is recommended.
-- Interval conflict rate: occupied recommended intervals divided by all recommended intervals. A window is safe only if every interval in that window is actually Empty.
-- Safe opportunity: the saved HVAC-south plus lighting-south load proxy summed only over recommended intervals whose observed label is Empty. This is opportunity accounting, not verified energy savings.
+- Threshold grid: 37 Empty-score thresholds from `0.05` through `0.95` in `0.025` increments. Scores are not calibrated probabilities.
+- Current 10% policy: maximize validation offline camera-label-empty load-proxy overlap among thresholds with empirical interval-level occupancy-conflict rate `<= 0.10`; use Empty recall as the same-proxy tie-break. The canonical hybrid threshold is `0.875`.
+- Stable recommendation: the uncalibrated score remains at or above threshold for at least four consecutive 15-minute intervals (one hour) within each midnight-labelled post-bin horizon. Every interval in a qualifying run is recommended.
+- Interval conflict rate: occupied recommended intervals divided by all recommended intervals. A window is all-camera-label-empty only if every interval in that window is actually Empty.
+- Offline load-proxy overlap: the saved HVAC-south plus lighting-south load proxy summed only over recommended intervals whose subsequently observed label is Empty. This is offline opportunity accounting, not verified energy savings.
 
 ## Sufficiency by requested metric
 
@@ -672,7 +675,7 @@ The combined validation export is the only saved validation file that contains a
 |---|---|---|
 | Validation Empty AUPRC | validation labels + three aligned probability columns | {'available' if not blockers else 'blocked'} |
 | Validation conflict and coverage | midnight labels + stable-window mask | {'available' if not blockers else 'blocked'} |
-| Validation safe opportunity | midnight labels + timestamp-mapped HVAC/lighting kWh | {'available' if not blockers else 'blocked'} |
+| Validation offline load-proxy overlap | midnight-labelled post-bin labels + timestamp-mapped HVAC/lighting kWh | {'available' if not blockers else 'blocked'} |
 | Recommended/safe/conflict intervals | stable mask + labels | {'available' if not blockers else 'blocked'} |
 | Recommended/safe windows | existing run extraction and all-empty window definition | {'available' if not blockers else 'blocked'} |
 | Fixed held-out evaluation | chronologically disjoint test export + fixed validation candidates | {'available' if not blockers else 'blocked'} |
@@ -688,7 +691,7 @@ The saved exports do not support new base-model training, per-seed joint-hybrid 
 
 def _format_candidate_table(frame: pd.DataFrame, prefix: str) -> str:
     rows = [
-        "| Candidate | Weights (Seasonal/LGBM/Transformer) | Threshold | AUPRC | Conflict | Safe kWh | Coverage | Intervals (rec/safe/conflict) | Windows (rec/safe/conflict) |",
+        "| Candidate | Weights (Seasonal/LGBM/Transformer) | Threshold | AUPRC | Conflict | Label-empty proxy kWh | Coverage | Intervals (rec/label-empty/conflict) | Windows (rec/all-label-empty/conflict) |",
         "|---|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in frame.itertuples(index=False):
@@ -787,7 +790,7 @@ def _joint_report(candidates: pd.DataFrame, sensitivity: pd.DataFrame) -> str:
         )
 
     sensitivity_lines = [
-        "| AUPRC floor | Weights (Seasonal/LGBM/Transformer) | Threshold | Validation AUPRC | Conflict | Safe kWh | Coverage | Windows |",
+        "| AUPRC floor | Weights (Seasonal/LGBM/Transformer) | Threshold | Validation AUPRC | Conflict | Label-empty proxy kWh | Coverage | Windows |",
         "|---|---|---:|---:|---:|---:|---:|---:|",
     ]
     for row in sensitivity.itertuples(index=False):
@@ -799,6 +802,8 @@ def _joint_report(candidates: pd.DataFrame, sensitivity: pd.DataFrame) -> str:
         )
 
     return f"""# Decision-aware joint weight-threshold search
+
+> **Final-audit status:** exploratory offline, post-bin saved-output diagnostic. A 00:00 anchor is the left label of a completed [00:00, 00:15) input bin, so its effective boundary is 00:15. "Safe" legacy fields mean subsequently camera-label-empty processed-load-proxy overlap, not physical absence, calibrated risk, savings, or a deployable policy. This search cannot replace the canonical result or promote a candidate after the required empirical retraining.
 
 ## Material Passport
 
@@ -817,7 +822,7 @@ The joint search {'did' if joint_changed else 'did not'} choose different uncons
 
 {_format_candidate_table(candidates.iloc[:3], 'validation')}
 
-Relative to the forecast-optimal reference, the unconstrained decision candidate changed validation AUPRC by {b_val[0]:+.4f}, conflict by {100 * b_val[1]:+.2f} percentage points, and safe opportunity by {b_val[2]:+.1f} kWh. The 99%-floor candidate changed those quantities by {c_val[0]:+.4f}, {100 * c_val[1]:+.2f} percentage points, and {c_val[2]:+.1f} kWh, respectively.
+Relative to the forecast-optimal reference, the unconstrained decision candidate changed validation AUPRC by {b_val[0]:+.4f}, conflict by {100 * b_val[1]:+.2f} percentage points, and offline proxy overlap by {b_val[2]:+.1f} kWh. The 99%-floor candidate changed those quantities by {c_val[0]:+.4f}, {100 * c_val[1]:+.2f} percentage points, and {c_val[2]:+.1f} kWh, respectively.
 
 ## AUPRC-floor sensitivity (validation only)
 
@@ -829,15 +834,15 @@ This is a constrained sensitivity analysis, not an arbitrary weighted-sum score.
 
 {_format_candidate_table(candidates, 'test')}
 
-- Unconstrained decision-optimal versus current primary: AUPRC {b_test[0]:+.4f}, conflict {100 * b_test[1]:+.2f} percentage points, safe opportunity {b_test[2]:+.1f} kWh. The validation safe-kWh gain {'carried to the held-out point estimate' if b_carried else 'did not carry to the held-out point estimate'}.
-- 99%-floor decision-optimal versus current primary: AUPRC {c_test[0]:+.4f}, conflict {100 * c_test[1]:+.2f} percentage points, safe opportunity {c_test[2]:+.1f} kWh. The validation safe-kWh gain {'carried to the held-out point estimate' if c_carried else 'did not carry to the held-out point estimate'}.
-- Unconstrained decision-optimal versus LightGBM: AUPRC {b_lgbm_test[0]:+.4f}, conflict {100 * b_lgbm_test[1]:+.2f} percentage points, safe opportunity {b_lgbm_test[2]:+.1f} kWh.
-- 99%-floor decision-optimal versus LightGBM: AUPRC {c_lgbm_test[0]:+.4f}, conflict {100 * c_lgbm_test[1]:+.2f} percentage points, safe opportunity {c_lgbm_test[2]:+.1f} kWh.
-- Current primary versus LightGBM on test: AUPRC {current['test_empty_auprc'] - lightgbm['test_empty_auprc']:+.4f}, conflict {100 * (current['test_occupancy_conflict_rate'] - lightgbm['test_occupancy_conflict_rate']):+.2f} percentage points, safe opportunity {current['test_safe_opportunity_kwh'] - lightgbm['test_safe_opportunity_kwh']:+.1f} kWh.
+- Unconstrained decision-optimal versus current primary: AUPRC {b_test[0]:+.4f}, conflict {100 * b_test[1]:+.2f} percentage points, offline proxy overlap {b_test[2]:+.1f} kWh. The validation proxy-overlap difference {'carried to the held-out point estimate' if b_carried else 'did not carry to the held-out point estimate'}.
+- 99%-floor decision-optimal versus current primary: AUPRC {c_test[0]:+.4f}, conflict {100 * c_test[1]:+.2f} percentage points, offline proxy overlap {c_test[2]:+.1f} kWh. The validation proxy-overlap difference {'carried to the held-out point estimate' if c_carried else 'did not carry to the held-out point estimate'}.
+- Unconstrained decision-optimal versus LightGBM: AUPRC {b_lgbm_test[0]:+.4f}, conflict {100 * b_lgbm_test[1]:+.2f} percentage points, offline proxy overlap {b_lgbm_test[2]:+.1f} kWh.
+- 99%-floor decision-optimal versus LightGBM: AUPRC {c_lgbm_test[0]:+.4f}, conflict {100 * c_lgbm_test[1]:+.2f} percentage points, offline proxy overlap {c_lgbm_test[2]:+.1f} kWh.
+- Current primary versus LightGBM on test: AUPRC {current['test_empty_auprc'] - lightgbm['test_empty_auprc']:+.4f}, conflict {100 * (current['test_occupancy_conflict_rate'] - lightgbm['test_occupancy_conflict_rate']):+.2f} percentage points, offline proxy overlap {current['test_safe_opportunity_kwh'] - lightgbm['test_safe_opportunity_kwh']:+.1f} kWh.
 
-The decision-aware opportunity gains are sizable as point estimates ({100 * b_test[2] / current['test_safe_opportunity_kwh']:+.1f}% without a floor and {100 * c_test[2] / current['test_safe_opportunity_kwh']:+.1f}% with the 99% floor versus the current hybrid), but they trade zero observed conflict for roughly 3% conflict. Without a prespecified paired uncertainty analysis or another untouched evaluation period, statistical or operational meaningfulness is not established.
+The decision-aware proxy-overlap differences are sizable as point estimates ({100 * b_test[2] / current['test_safe_opportunity_kwh']:+.1f}% without a floor and {100 * c_test[2] / current['test_safe_opportunity_kwh']:+.1f}% with the 99% floor versus the current hybrid), but they trade zero observed conflict for roughly 3% conflict. Without a prespecified paired uncertainty analysis or another untouched evaluation period, statistical or operational meaningfulness is not established.
 
-These are descriptive point estimates on one held-out period. “Safe opportunity” means recorded controllable-load proxy coinciding with recommendations that were observed Empty; it is neither verified energy savings nor a guarantee of safety.
+These are descriptive point estimates on one held-out period. The label-empty proxy overlap means processed HVAC-plus-lighting load coinciding with recommendations that were subsequently observed camera-label-empty; it is neither verified energy savings nor a guarantee of safety.
 
 ## Coverage and conservatism
 
@@ -908,11 +913,17 @@ def make_validation_frontier(
             zorder=5,
             label=row["candidate_label"],
         )
-    ax.axvline(RISK_LIMIT, color="black", linestyle="--", linewidth=1.2, label="10% constraint")
+    ax.axvline(
+        RISK_LIMIT,
+        color="black",
+        linestyle="--",
+        linewidth=1.2,
+        label="10% empirical conflict cutoff",
+    )
     ax.xaxis.set_major_formatter(lambda value, _: f"{100 * value:.0f}%")
-    ax.set_xlabel("Validation occupancy-conflict rate")
-    ax.set_ylabel("Validation safe opportunity (kWh)")
-    ax.set_title("Validation-only joint weight-threshold frontier")
+    ax.set_xlabel("Validation camera-label conflict rate")
+    ax.set_ylabel("Validation label-empty load-proxy overlap (kWh)")
+    ax.set_title("Validation-only joint weight-threshold diagnostic")
     ax.legend(fontsize=9, loc="best")
     fig.text(
         0.5,
@@ -937,8 +948,8 @@ def make_test_comparison(candidates: pd.DataFrame, path: Path) -> None:
     axes[0].barh(positions, plot["test_safe_opportunity_kwh"], color=colors)
     axes[0].set_yticks(positions, labels=labels)
     axes[0].invert_yaxis()
-    axes[0].set_xlabel("Held-out test safe opportunity (kWh)")
-    axes[0].set_title("A. Safe opportunity")
+    axes[0].set_xlabel("Held-out label-empty load-proxy overlap (kWh)")
+    axes[0].set_title("A. Offline load-proxy overlap")
     axes[1].barh(positions, 100 * plot["test_occupancy_conflict_rate"], color=colors)
     axes[1].axvline(10, color="black", linestyle="--", linewidth=1.2)
     axes[1].set_xlabel("Held-out test occupancy conflict (%)")
@@ -983,7 +994,12 @@ def make_forecast_vs_decision(candidates: pd.DataFrame, path: Path) -> None:
         ("threshold", "Threshold", "Selected Empty threshold", (0, 1)),
         ("validation_empty_auprc", "AUPRC", "Validation Empty AUPRC", None),
         ("validation_occupancy_conflict_rate", "Conflict", "Validation conflict", (0, None)),
-        ("validation_safe_opportunity_kwh", "Safe kWh", "Validation safe opportunity", (0, None)),
+        (
+            "validation_safe_opportunity_kwh",
+            "Proxy kWh",
+            "Validation label-empty load-proxy overlap",
+            (0, None),
+        ),
     ]
     for axis, (column, title, ylabel, limits) in zip(axes[1:], metrics):
         values = plot[column].to_numpy(dtype=float)
@@ -1020,20 +1036,12 @@ def run_decision_aware_joint_search(
     figures_dir: Path | str = Path("figures"),
     reports_dir: Path | str = Path("reports"),
 ) -> list[Path]:
-    """Audit, select on validation, and evaluate fixed candidates on test."""
+    """Select on validation, then audit and evaluate fixed candidates on test."""
     results_dir = Path(results_dir)
     predictions_dir = Path(predictions_dir)
     figures_dir = Path(figures_dir)
     reports_dir = Path(reports_dir)
     reports_dir.mkdir(parents=True, exist_ok=True)
-    audit_path = reports_dir / "decision_aware_joint_search_audit.md"
-    audit_text, sufficient = _audit_markdown(results_dir, predictions_dir)
-    audit_path.write_text(audit_text, encoding="utf-8")
-    if not sufficient:
-        raise ScientificInputBlocker(
-            f"Saved outputs are insufficient; see {audit_path.as_posix()}"
-        )
-
     # Selection gate: no test frame is in memory or accepted by these functions.
     validation = _read_csv(results_dir / "forecast_predictions_validation_all_models.csv")
     processed = _read_csv(results_dir / "processed_lbnl_15min_pacific.csv")
@@ -1047,6 +1055,17 @@ def run_decision_aware_joint_search(
     sensitivity.to_csv(sensitivity_path, index=False, encoding="utf-8-sig")
     del validation
     gc.collect()
+
+    # The complete audit reads held-out artifacts only after every candidate is
+    # frozen.  It checks alignment and legacy reports but cannot alter the
+    # already-selected validation candidates.
+    audit_path = reports_dir / "decision_aware_joint_search_audit.md"
+    audit_text, sufficient = _audit_markdown(results_dir, predictions_dir)
+    audit_path.write_text(audit_text, encoding="utf-8")
+    if not sufficient:
+        raise ScientificInputBlocker(
+            f"Saved outputs are insufficient; see {audit_path.as_posix()}"
+        )
 
     # Held-out data are loaded only after every candidate is fixed on validation.
     test = _read_csv(results_dir / "forecast_predictions_test_all_models.csv")

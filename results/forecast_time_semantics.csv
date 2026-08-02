@@ -1,0 +1,6 @@
+﻿item,definition
+anchor_time,"Left label of the final completed input bin [t, t+15 min); it is not the decision-availability timestamp."
+effective_issue_boundary,"anchor_time + 15 min, after the completed input bin is available."
+first_target_interval,Begins at anchor_time + 15 min (the effective issue boundary); horizon_step=96 ends 24 h after that boundary.
+midnight_policy_scope,"Selects anchors whose input bin starts at 00:00. The resulting 96-step post-bin target horizon runs from 00:15 to the next day's 00:15, exclusive at the right endpoint."
+source_provenance_limit,This convention controls row ordering after import of the cleaned release; it does not establish prospective provenance for upstream imputation in that release.
