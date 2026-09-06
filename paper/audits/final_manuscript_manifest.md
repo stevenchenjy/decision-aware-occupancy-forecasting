@@ -1,15 +1,15 @@
 # Final Manuscript Manifest
 
-**Version date:** 2026-08-01  
+**Version date:** 2026-09-04 (float-placement fix only)
 **Evidence verdict:** **requires empirical rerun**
 
 ## Manuscript identity
 
 | Field | Value |
 |---|---|
-| Title | *Validation-Selected Empty-Window Recommendations: An Offline Post-Bin Occupancy-Forecasting Case Study* |
+| Title | *Validation-Selected Hybrid Occupancy Forecasting for Empty-Window Recommendations: An Offline Post-Bin Case Study* |
 | Format | Anonymous generic IEEEtran conference-style draft |
-| Central contribution | A reproducible saved-output, post-bin evaluation that separates overlapping occupancy-score discrimination from non-overlapping stable-window offline processed-load-proxy accounting. |
+| Central contribution | A reproducible saved-output, post-bin evaluation of a validation-selected hybrid that separates overlapping occupancy-score discrimination from non-overlapping stable-window conflict and processed-load-proxy accounting. |
 | Authorized interpretation | Offline, camera-label-conditioned opportunity accounting from cleaned-release saved outputs. |
 | Excluded interpretation | Real-time midnight issuance, calibrated risk, verified energy savings, controllable capacity, comfort preservation, controller performance, or external generalization. |
 
@@ -17,8 +17,8 @@
 
 | File | SHA-256 |
 |---|---|
-| `paper/submission/occupancy_empty_window_ieee_post_bin_case_study.pdf` | `74ad6cbf7c9ad7f408ebcc7b4ffe08d694df425e651e7315fb48308b2bf35da2` |
-| `paper/manuscript/main.tex` | `59210eb1942f9da71b9e168c40e21f1930c2984b32b5f583d4656c26d5420f43` |
+| `paper/submission/occupancy_empty_window_ieee_post_bin_case_study.pdf` | `9d3f312eb6df6d7411a8caeb69c7d19cf1c8762de06dc1168007fe49a4888c3d` |
+| `paper/manuscript/main.tex` | `88a541fcbdece69fa9f581d14b4cd0cda88317b7056fdba76edc5dec1fbe66f9` |
 | `paper/manuscript/references.bib` | `b94a535dc2aff6c6fc9961f3644382a02355b30c00eff39a6c36c6e2427ab2e8` |
 | `paper/manuscript/figures/fig_policy_comparison.png` | `e8094bb362307f09c790f29ebd05db228e3df0d443b2b125ad1f905e02966066` |
 | `paper/manuscript/figures/fig_paired_uncertainty.png` | `aaab31d0d582c0b42baa9e15e5cc853a4f2b69ae780be6f465a8c250a533709b` |
