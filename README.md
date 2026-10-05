@@ -1,5 +1,22 @@
 # Building 59 Occupancy Forecasting: Offline Post-Bin Case Study
 
+## What this project studies
+
+A building-occupancy forecast becomes useful only when it can support a decision. This research repository asks when model outputs identify sustained empty intervals, how often those recommendations conflict with occupancy labels, and how much processed building load coincides with them.
+
+The case study uses the cleaned LBNL Building 59 dataset and compares historical-average, tree-based, neural, and blended forecasts. Its main result is an **offline analysis of saved predictions**, with explicit boundaries between forecast quality, recommendation errors, and a load-opportunity proxy. It is a research case study requiring an empirical rerun, not a deployed building controller or a demonstration of energy savings.
+
+If you are visiting from my [personal website](https://stevenchenjy.github.io/), start here and with [What the saved artifacts support](#what-the-saved-artifacts-support). For the methodology, read the [paper workspace](paper/README.md); for technical reproduction, use [REPRODUCING.md](REPRODUCING.md).
+
+## The analysis in plain language
+
+1. Compare model outputs against the building's recorded empty/occupied labels.
+2. Select a model blend and score threshold using validation data.
+3. Apply a fixed rule to find consecutive recommended empty intervals in the saved test predictions.
+4. Count label conflicts and the processed HVAC/lighting load associated with the intervals.
+
+The inputs use completed 15-minute bins. An anchor labeled `00:00` contains the interval `[00:00, 00:15)` and is treated as available at `00:15`. That timing matters: this saved-output analysis does not demonstrate that the same information would have been available to an operational forecast issued earlier.
+
 ## Current scientific status
 
 **Audit verdict: requires empirical rerun.** The committed saved outputs are internally reproducible as an offline, post-bin analysis. They do not establish a real-time day-ahead system or a prospective operational recommendation.
@@ -29,6 +46,16 @@ The deep-model runs carry labels 42, 43, and 44, but model construction preceded
 
 ## Reproduce the auditable saved-output path
 
+Use a virtual environment and install the repository's requirements first. Python 3.11 is the saved-output CI target; the requirements recommend Python 3.10–3.12. The recorded audit environment and the distinction between supported reproduction paths are documented in [REPRODUCING.md](REPRODUCING.md).
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r requirements.txt
+```
+
+Run the following from the repository root. These commands write regenerated analysis and figure artifacts to the working copy:
+
     python3 -m pytest -q
     python3 scripts/generate_hybrid_artifacts.py
     python3 scripts/audit_validation_selection_stability.py
@@ -37,6 +64,8 @@ The deep-model runs carry labels 42, 43, and 44, but model construction preceded
     python3 paper/scripts/generate_paper_figures.py
 
 These commands regenerate saved-output artifacts; they do **not** retrain base models from empirical source streams. See [REPRODUCING.md](REPRODUCING.md) and the [rerun manifest](paper/audits/rerun_manifest.md).
+
+The external cleaned dataset is not needed for this saved-output path; the required derived inputs are already committed. For dataset provenance and the separate legacy replay, see [DATA.md](DATA.md). `scripts/run_all.py` requires the explicit `--legacy-cleaned-replay` flag and writes to an isolated directory; it is not an empirical rerun entry point.
 
 ## Evidence layout
 
