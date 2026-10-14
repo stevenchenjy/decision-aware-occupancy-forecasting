@@ -1,0 +1,101 @@
+{
+  "record_version": "research-record-v1",
+  "record_date": "2026-10-14",
+  "title": "Validation-Selected Hybrid Occupancy Forecasting for Empty-Window Recommendations: An Offline Post-Bin Case Study",
+  "authors": [
+    {
+      "given_names": "Junyu",
+      "family_names": "Chen",
+      "affiliation": "The Storm King School"
+    },
+    {
+      "given_names": "Chong",
+      "family_names": "Li",
+      "affiliation": "Department of Electrical Engineering, Columbia University"
+    }
+  ],
+  "status": "Working paper; scientific audit requires empirical rerun",
+  "release_url": "https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/releases/tag/research-record-v1",
+  "research_page": "https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/",
+  "repository_baseline_commit": "00303c8c5bbb1a94708a1bfa3a2b38aa876a2af8",
+  "authored_manuscript": {
+    "path": "docs/occupancy-forecasting-working-paper.pdf",
+    "source_filename": "Paper2.pdf",
+    "source_url": "https://drive.google.com/file/d/1e-E5qSp19_ASbkDfm-COwtmbHb0x29og/view",
+    "source_drive_file_id": "1e-E5qSp19_ASbkDfm-COwtmbHb0x29og",
+    "source_modified_utc": "2026-10-05T01:47:13.518Z",
+    "retrieved_date": "2026-10-14",
+    "pdf_creation_time_utc": "2026-09-26T21:37:56Z",
+    "pages": 9,
+    "preservation": "Byte-for-byte copy of supplied PDF; not regenerated from checked-in anonymous LaTeX",
+    "unfinished_metadata": [
+      "Anonymous-review declaration text remains despite named author block",
+      "Persistent archival URL placeholder remains"
+    ],
+    "sha256": "9c4d28ba6abb11a5a6709c45d2b25302ee6284e2366963885dc5c0c3b82df425"
+  },
+  "existing_anonymous_manuscript": {
+    "path": "paper/submission/occupancy_empty_window_ieee_post_bin_case_study.pdf",
+    "source": "paper/manuscript/main.tex",
+    "manifest": "paper/audits/final_manuscript_manifest.md",
+    "sha256": "9d3f312eb6df6d7411a8caeb69c7d19cf1c8762de06dc1168007fe49a4888c3d",
+    "relationship": "Separate earlier anonymous audit build, preserved without changes"
+  },
+  "scientific_boundaries": [
+    "Offline post-bin analysis of saved predictions from a cleaned single-building release",
+    "388032 overlapping forecast rows and 43 non-overlapping policy horizons are different evaluation scopes",
+    "490.1 kWh is processed HVAC-plus-lighting load-proxy overlap, not measured savings",
+    "Zero observed camera-label conflicts is not a prospective safety guarantee",
+    "Source timestamp and imputation provenance remain unresolved",
+    "Deep-model construction preceded seed reset in the saved runs",
+    "Empirical rerun required before prospective operational claims"
+  ],
+  "audit": "reports/final_self_audit_2026-08-01.md",
+  "rerun_manifest": "paper/audits/rerun_manifest.md",
+  "doi": null,
+  "venue": null,
+  "peer_review_acceptance_verified": false,
+  "new_reuse_license_assigned": false,
+  "files": [
+    {
+      "path": "docs/occupancy-forecasting-working-paper.pdf",
+      "sha256": "9c4d28ba6abb11a5a6709c45d2b25302ee6284e2366963885dc5c0c3b82df425",
+      "size_bytes": 528475
+    },
+    {
+      "path": "paper/submission/occupancy_empty_window_ieee_post_bin_case_study.pdf",
+      "sha256": "9d3f312eb6df6d7411a8caeb69c7d19cf1c8762de06dc1168007fe49a4888c3d",
+      "size_bytes": 364750
+    },
+    {
+      "path": "CITATION.cff",
+      "sha256": "98e53a0bf5b242fd20e4c89cb2fda94b5c26c3cf7d9d2606666939fd38974ac4",
+      "size_bytes": 1527
+    },
+    {
+      "path": "docs/citation.bib",
+      "sha256": "bf6767b72b097fcb464afc71e4ed44eb240ac209bdffa5c2fc660470ea453f26",
+      "size_bytes": 432
+    },
+    {
+      "path": "results/canonical_model_comparison.csv",
+      "sha256": "bab879926bca482d42698475e8381c0886029d727ce17efff622c810d299d2c2",
+      "size_bytes": 1859
+    },
+    {
+      "path": "results/canonical_policy_10pct.csv",
+      "sha256": "a7821c9454584b4e426ae6226acef8825c2f2ce18f41b526ccb8eee891c54dab",
+      "size_bytes": 1703
+    },
+    {
+      "path": "results/validation_selection_stability.csv",
+      "sha256": "25e7bf581505c3dfb595ddc32334bdf529b68b6a9b69d98e5848ed9ac6bfd356",
+      "size_bytes": 37812
+    },
+    {
+      "path": "results/forecast_time_semantics.csv",
+      "sha256": "9a064864997435cad88e40602f5e8599abfd75c92ad1852b0ab4c164b45f95f1",
+      "size_bytes": 742
+    }
+  ]
+}

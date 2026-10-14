@@ -1,5 +1,7 @@
 # Submission Handoff Status
 
+The [public research record](../research-record/README.md) now preserves a separate authored manuscript supplied from Drive. The PDF in this directory remains the earlier anonymous audit build. Public preservation of a working draft does not satisfy the empirical requirements below or constitute a venue submission.
+
 ## Current status
 
 **Hold external submission as a prospective operational paper. Verdict: requires empirical rerun.**

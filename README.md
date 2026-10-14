@@ -1,5 +1,15 @@
 # Building 59 Occupancy Forecasting: Offline Post-Bin Case Study
 
+## Paper and research record
+
+**[Validation-Selected Hybrid Occupancy Forecasting for Empty-Window Recommendations: An Offline Post-Bin Case Study](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/)**
+
+Junyu Chen · Chong Li
+
+[Read the authored paper (PDF)](docs/occupancy-forecasting-working-paper.pdf) · [Research page](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/) · [Versioned research record](https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/releases/tag/research-record-v1) · [Cite / BibTeX](docs/citation.bib) · [Manuscript provenance](paper/research-record/README.md)
+
+**Working paper; scientific audit requires empirical rerun.** The public authored manuscript is preserved as supplied. It is separate from the repository's earlier anonymous manuscript build and retains unfinished declaration/archive text. This research record connects the paper, code, saved outputs, and audit; it does not establish peer-review acceptance or measured energy savings.
+
 ## What this project studies
 
 A building-occupancy forecast becomes useful only when it can support a decision. This research repository asks when model outputs identify sustained empty intervals, how often those recommendations conflict with occupancy labels, and how much processed building load coincides with them.
@@ -71,7 +81,9 @@ The external cleaned dataset is not needed for this saved-output path; the requi
 
 - 'results/' and 'predictions/' — canonical saved forecasts, policy accounting, timing semantics, and validation-stability artifact.
 - 'src/' and 'scripts/' — preprocessing, models, canonical analysis, and reproducibility checks.
-- 'paper/' — IEEE manuscript, manuscript figures, audits, and submission handoff.
+- 'docs/' — public research page, supplied authored working paper, and BibTeX citation.
+- 'paper/research-record/' — public snapshot provenance, checksums, and citation/dissemination guidance.
+- 'paper/' — earlier anonymous IEEE-style manuscript source/build, manuscript figures, audits, and submission handoff.
 - 'reports/final_self_audit_2026-08-01.md' — final code/results/paper consistency audit.
 - 'reports/' — historical reports and current exploratory-search reports; use the final self-audit to interpret historical claims.
 

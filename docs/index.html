@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Validation-Selected Hybrid Occupancy Forecasting for Empty-Window Recommendations: An Offline Post-Bin Case Study</title>
+  <meta name="description" content="Working paper by Junyu Chen and Chong Li on validation-selected hybrid occupancy forecasts and offline empty-window recommendations. Read the paper, code, evidence, and reproduction record.">
+  <meta name="citation_title" content="Validation-Selected Hybrid Occupancy Forecasting for Empty-Window Recommendations: An Offline Post-Bin Case Study">
+  <meta name="citation_author" content="Chen, Junyu">
+  <meta name="citation_author" content="Li, Chong">
+  <meta name="citation_publication_date" content="2026">
+  <meta name="citation_online_date" content="2026/10/14">
+  <meta name="citation_pdf_url" content="https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/occupancy-forecasting-working-paper.pdf">
+  <meta name="citation_language" content="en">
+  <link rel="canonical" href="https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Validation-Selected Hybrid Occupancy Forecasting for Empty-Window Recommendations: An Offline Post-Bin Case Study">
+  <meta property="og:description" content="A working paper and inspectable research record by Junyu Chen and Chong Li.">
+  <meta property="og:url" content="https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/">
+  <meta name="theme-color" content="#ffffff">
+  <style>
+    :root { color-scheme: light; --ink: #252b30; --muted: #59616a; --link: #154c78; --rule: #dce1e5; }
+    * { box-sizing: border-box; }
+    html { font-size: 100%; scroll-behavior: smooth; }
+    body { margin: 0; background: #fff; color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; font-size: 1.0625rem; line-height: 1.72; }
+    main { max-width: 51rem; margin: 0 auto; padding: 4rem 1.75rem 3rem; }
+    a { color: var(--link); text-underline-offset: .19em; text-decoration-thickness: 1px; }
+    a:hover { text-decoration-thickness: 2px; }
+    a:focus-visible { outline: 3px solid #196ca0; outline-offset: 4px; border-radius: 2px; }
+    .skip { position: absolute; top: .7rem; left: 1rem; padding: .35rem .75rem; background: #fff; transform: translateY(-200%); }
+    .skip:focus { transform: translateY(0); }
+    .record-status { color: var(--muted); font-size: .875rem; margin: 0 0 1rem; }
+    h1 { font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.9rem, 4.4vw, 2.65rem); line-height: 1.2; letter-spacing: -.025em; font-weight: 500; margin: 0 0 1.5rem; text-wrap: balance; }
+    .authors { display: flex; gap: 1.5rem 3rem; flex-wrap: wrap; margin: 0 0 1.75rem; }
+    .author { margin: 0; line-height: 1.55; }
+    .author strong { font-weight: 600; }
+    .affiliation { display: block; font-size: .875rem; color: var(--muted); }
+    .resources { display: flex; gap: .55rem 1.25rem; flex-wrap: wrap; padding: 1rem 0 1.1rem; margin: 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); list-style: none; font-size: .95rem; }
+    section { margin-top: 2.35rem; }
+    h2 { font-size: 1.2rem; line-height: 1.4; letter-spacing: -.012em; margin: 0 0 .85rem; font-weight: 650; }
+    p { margin: 0 0 1rem; }
+    .abstract { text-align: left; }
+    .keywords { font-size: .875rem; color: var(--muted); line-height: 1.65; margin-top: 1.25rem; }
+    .scope { padding-top: 1.85rem; border-top: 1px solid var(--rule); }
+    .scope ul { padding-left: 1.25rem; margin: 0; }
+    .scope li { padding-left: .2rem; margin-bottom: .65rem; }
+    .record-links { padding-left: 1.25rem; margin: 0; }
+    .record-links li { margin-bottom: .6rem; }
+    .note { color: var(--muted); font-size: .9rem; }
+    footer { border-top: 1px solid var(--rule); margin-top: 2.5rem; padding-top: 1.25rem; font-size: .825rem; color: var(--muted); }
+    footer p { margin: 0; }
+    @media (max-width: 520px) {
+      main { padding: 2rem 1.2rem 2rem; }
+      body { font-size: 1rem; line-height: 1.7; }
+      .authors { gap: 1rem; flex-direction: column; }
+      .resources { gap: .65rem 1.05rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    @media print {
+      main { max-width: none; padding: 0; }
+      a { color: inherit; }
+      .skip { display: none; }
+      section, h1 { break-inside: avoid; }
+      .abstract { break-inside: auto; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#abstract">Skip to abstract</a>
+  <main>
+    <header>
+      <p class="record-status">Working paper · Research record v1 · <time datetime="2026-10-14">October 14, 2026</time></p>
+      <h1>Validation-Selected Hybrid Occupancy Forecasting for Empty-Window Recommendations: An Offline Post-Bin Case Study</h1>
+      <div class="authors" aria-label="Authors in paper order">
+        <p class="author"><strong>Junyu Chen</strong><span class="affiliation">The Storm King School</span></p>
+        <p class="author"><strong>Chong Li</strong><span class="affiliation">Department of Electrical Engineering<br>Columbia University</span></p>
+      </div>
+      <nav aria-label="Paper and research resources">
+        <ul class="resources">
+          <li><a href="./occupancy-forecasting-working-paper.pdf">Read the paper (PDF)</a></li>
+          <li><a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting">Code &amp; evidence</a></li>
+          <li><a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/releases/tag/research-record-v1">Versioned release</a></li>
+          <li><a href="./citation.bib" download>Cite this work (BibTeX)</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <section id="abstract" aria-labelledby="abstract-heading">
+      <h2 id="abstract-heading">Abstract</h2>
+      <p class="abstract">Building operations need occupancy forecasts that arrive in time, last long enough, and rarely conflict with later occupancy observations. We study this problem in a single-building, 15-min, offline <em>post-bin</em> case study. The primary <em>hybrid</em> is a weighted average of Empty-class scores from a historical schedule, LightGBM, and a compact Transformer, combining recurring, nonlinear, and sequential patterns. Validation area under the precision–recall curve (AUPRC) selects the weights. AUPRC summarizes Empty-class precision and recall across score thresholds; higher values indicate better discrimination when class frequencies are unequal. A separate validation search selects the operating threshold that maximizes a load-opportunity proxy under a 10% conflict-rate limit and a one-hour minimum window. Conflict rate is the share of recommended intervals later labelled occupied. The opportunity proxy sums processed HVAC-plus-lighting load in recommendations later labelled Empty and represents load available for further operational investigation. A stored anchor <i>t</i> covers the completed input bin [<i>t</i>, <i>t</i> + 15 min), making the forecast available at <i>t</i> + 15 min. Across 388,032 overlapping held-out forecast rows, hybrid AUPRC is 0.8514, compared with 0.8497 for the historical baseline and 0.8382 for LightGBM. Across 43 non-overlapping policy horizons, the fixed hybrid policy recommends 259 intervals; all are subsequently camera-label-empty, form 14 label-safe windows, and coincide with 490.1 kWh of processed load proxy. LightGBM finds a similar opportunity (493.9 kWh) with 11 conflicts, whereas the conflict-free historical policy finds 94.6 kWh. The hybrid therefore preserves strong forecast discrimination while improving the observed opportunity–conflict trade-off. A prospective rerun with verified source timestamps is the next step toward operational evaluation.</p>
+      <p class="keywords"><strong>Keywords:</strong> occupancy forecasting; hybrid forecasting; building energy management; offline load opportunity; post-bin evaluation; stable empty windows.</p>
+    </section>
+
+    <section class="scope" aria-labelledby="scope-heading">
+      <h2 id="scope-heading">Scope and interpretation</h2>
+      <ul>
+        <li>This is a single-building, offline case study based on saved model outputs. An empirical rerun with verified source timestamps remains necessary for prospective evaluation.</li>
+        <li>The reported kWh values measure processed load-proxy overlap with camera-label-empty recommendations. They do not establish energy savings from a control intervention.</li>
+        <li>The forecast evaluation uses 388,032 overlapping rows; the policy evaluation uses 43 non-overlapping horizons. These are different evaluation units.</li>
+        <li>Paired test contrasts cross zero. Point estimates and zero observed conflicts in this held-out period do not establish statistical superiority or guarantee future conflict-free operation.</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="evidence-heading">
+      <h2 id="evidence-heading">Research record and reproduction</h2>
+      <ul class="record-links">
+        <li><a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/REPRODUCING.md">Reproduction guide</a> — regenerate and inspect the repository’s saved-output results.</li>
+        <li><a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/results/canonical_model_comparison.csv">Canonical forecast metrics</a> and <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/results/canonical_policy_10pct.csv">canonical policy results</a> — machine-readable evidence behind the reported comparisons.</li>
+        <li><a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/reports/final_self_audit_2026-08-01.md">Repository audit</a> and <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/paper/audits/rerun_manifest.md">rerun manifest</a> — claim boundaries and outstanding empirical checks.</li>
+        <li><a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/paper/research-record/README.md">Paper provenance and version record</a> — document identity and the relationship between the author PDF and repository manuscript.</li>
+        <li><a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/paper/manuscript/main.tex">Existing anonymous LaTeX audit version</a> — a separate manuscript source retained for research traceability.</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="version-heading">
+      <h2 id="version-heading">About this version</h2>
+      <p class="note">Author names, order, and affiliations follow the supplied author PDF. That PDF is preserved unchanged in this research record; it still includes pending declaration and persistent-archive placeholders. The existing LaTeX manuscript remains a separate anonymous audit version. This record identifies the work as a working paper and makes no claim of journal publication or peer review.</p>
+    </section>
+
+    <footer>
+      <p>Research record v1 · First posted <time datetime="2026-10-14">October 14, 2026</time> · <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting">Repository and version history</a></p>
+    </footer>
+  </main>
+</body>
+</html>

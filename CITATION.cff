@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: >-
+  Please cite the working paper below when discussing this study. This research
+  record contains an offline post-bin saved-output analysis; its scientific audit
+  requires an empirical rerun before prospective operational claims.
+type: software
+title: "Decision-Aware Occupancy Forecasting: Research Record"
+authors:
+  - family-names: Chen
+    given-names: Junyu
+repository-code: "https://github.com/stevenchenjy/decision-aware-occupancy-forecasting"
+url: "https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/"
+version: research-record-v1
+date-released: 2026-10-14
+keywords:
+  - occupancy forecasting
+  - building energy management
+  - time series
+  - reproducible research
+preferred-citation:
+  type: unpublished
+  title: >-
+    Validation-Selected Hybrid Occupancy Forecasting for Empty-Window
+    Recommendations: An Offline Post-Bin Case Study
+  authors:
+    - family-names: Chen
+      given-names: Junyu
+      affiliation: The Storm King School
+    - family-names: Li
+      given-names: Chong
+      affiliation: "Department of Electrical Engineering, Columbia University"
+  year: 2026
+  version: research-record-v1
+  url: "https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/releases/tag/research-record-v1"
+  notes: >-
+    Working paper; authored manuscript archived as supplied. Offline post-bin case
+    study requiring an empirical rerun. This record does not establish peer-review
+    acceptance, prospective operational validation, or energy savings.
