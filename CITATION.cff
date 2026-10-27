@@ -1,10 +1,10 @@
 cff-version: 1.2.0
 message: >-
-  Please cite the working paper below when discussing this study. This research
+  Please cite the author manuscript below when discussing this study. This research
   record contains an offline post-bin saved-output analysis; its scientific audit
   requires an empirical rerun before prospective operational claims.
 type: software
-title: "Decision-Aware Occupancy Forecasting: Research Record"
+title: "Occupancy forecasting for building energy management"
 authors:
   - family-names: Chen
     given-names: Junyu
@@ -33,6 +33,6 @@ preferred-citation:
   version: research-record-v1
   url: "https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/releases/tag/research-record-v1"
   notes: >-
-    Working paper; authored manuscript archived as supplied. Offline post-bin case
+    Unpublished author manuscript, archived as supplied. Offline post-bin case
     study requiring an empirical rerun. This record does not establish peer-review
     acceptance, prospective operational validation, or energy savings.

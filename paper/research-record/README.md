@@ -1,4 +1,4 @@
-# Working paper and research record
+# Manuscript provenance and research archive
 
 **Validation-Selected Hybrid Occupancy Forecasting for Empty-Window Recommendations: An Offline Post-Bin Case Study**
 
@@ -10,7 +10,9 @@
 
 ## Status and contribution
 
-This working paper connects next-24-hour occupancy scores to recommendations for sustained empty intervals in a single-building, offline post-bin case study. A validation-selected blend combines a historical schedule, LightGBM, and a compact Transformer. The record connects the supplied manuscript to the saved predictions, analysis scripts, and the repository's scientific audit.
+Junyu Chen confirmed that he developed the research question, prepared the data, built and compared the forecasting models, evaluated the results, and wrote the paper, with guidance from Prof. Chong Li. This author-confirmed role description is used on the public project pages; the preserved PDF declarations remain unchanged.
+
+This author manuscript connects next-24-hour occupancy scores to recommendations for sustained empty intervals in a single-building, offline post-bin case study. A validation-selected blend combines a historical schedule, LightGBM, and a compact Transformer. The record connects the supplied manuscript to the saved predictions, analysis scripts, and the repository's scientific audit.
 
 **Scientific audit verdict: requires empirical rerun.** This public research snapshot does not establish peer-review acceptance or a journal/conference publication. IEEE-style formatting identifies the document layout, not a venue or acceptance.
 
@@ -34,7 +36,7 @@ The PDF metadata records a creation time of September 26, 2026. This is file pro
 
 The [existing anonymous PDF](../submission/occupancy_empty_window_ieee_post_bin_case_study.pdf), [LaTeX source](../manuscript/main.tex), and [earlier manuscript manifest](../audits/final_manuscript_manifest.md) remain a separate audit record. Their PDF hash is different. The authored Drive PDF is not claimed to have been rebuilt from the checked-in anonymous LaTeX. The two versions agree on the central results and evidence limits but differ in authorship and typesetting.
 
-The supplied authored PDF still contains an anonymous-review declaration paragraph and a placeholder for a persistent archive URL. Those unfinished items are preserved as part of the supplied snapshot. Contributor roles, funding, competing interests, a manuscript reuse license, and any venue-specific declarations have not been inferred or completed. This record assigns no new reuse license.
+The supplied authored PDF still contains an anonymous-review declaration paragraph and a placeholder for a persistent archive URL. Those unfinished items are preserved as part of the supplied snapshot. The role description above was confirmed by Junyu Chen. Formal contributor declarations, funding, competing interests, a manuscript reuse license, and any venue-specific declarations have not been completed in the preserved PDF. This record assigns no new reuse license.
 
 ## Follow the evidence
 
@@ -54,4 +56,4 @@ Use the release tag for a fixed research snapshot. The research page and default
 
 For a persistent scholarly archive, connect this repository in the author's Zenodo account, archive an eligible release with verified authorship and an explicitly chosen license, and add the issued DOI after verifying it. The [GitHub archive guide](https://docs.github.com/en/repositories/archiving-a-github-repository/referencing-and-citing-content) explains that workflow. A GitHub release and citation metadata do not themselves create a DOI.
 
-The public research page includes a complete author-written abstract, bibliographic metadata, and a directly accessible searchable PDF following [Google Scholar's inclusion guidance](https://scholar.google.com/intl/en/scholar/inclusion.html). Search-engine or Scholar indexing is not established by deployment. Any formal preprint or venue submission remains a separate step, subject to the manuscript's scientific status and author declarations.
+The public project page includes a plain-language research overview, the preserved technical abstract, bibliographic metadata, and a directly accessible searchable PDF following [Google Scholar's inclusion guidance](https://scholar.google.com/intl/en/scholar/inclusion.html). Search-engine or Scholar indexing is not established by deployment. Any formal preprint or venue submission remains a separate step, subject to the manuscript's scientific status and author declarations.
