@@ -1,0 +1,36 @@
+name: Demo and notebook
+
+on:
+  push:
+    paths:
+      - 'src/demo_analysis.py'
+      - 'scripts/*demo*'
+      - 'docs/**'
+      - 'notebooks/**'
+      - 'tests/*demo*'
+      - 'results/**'
+      - '.github/workflows/demo.yml'
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Check generated data and source hashes
+        run: python scripts/build_demo.py --check
+      - name: Check policy scope and accounting countercases
+        run: python -m unittest discover -s tests -p 'test_demo_analysis.py' -v
+      - name: Reconcile browser accounting with Python
+        run: node --test tests/demo-policy.test.cjs
+      - name: Execute notebook code cells without training dependencies
+        run: python scripts/check_demo_notebook.py
