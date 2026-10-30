@@ -41,6 +41,9 @@ doi_10_7941_D1N33Q__v20220202/
 tmp/
 scratch/
 
+# Owner-only traffic and outreach evidence
+local-impact/
+
 # Old development notebooks
 LBNL_occupancy_transformer_forecasting.ipynb
 LBNL_occupancy_transformer_forecasting copy.ipynb

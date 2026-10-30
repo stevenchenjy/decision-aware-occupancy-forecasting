@@ -1,0 +1,26 @@
+name: Code, demo, or documentation problem
+description: Report a concrete error or unclear instruction.
+title: "Problem: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: State the expected and actual behavior. Include a relevant file or page link.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment and commit
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Error output or screenshot
+      description: Remove credentials and personal details before posting.
