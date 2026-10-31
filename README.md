@@ -16,7 +16,7 @@ How can building-occupancy forecasts identify sustained empty periods worth inve
 
 This study uses recorded data from LBNL Building 59 to connect that practical question with model development and evaluation. It compares historical schedules, machine-learning models, and a model blend, then checks whether their recommendations agree with recorded occupancy labels. The repository contains the paper, Python code, saved predictions, evaluation tables, and figures. The reported findings come from an offline analysis of saved model outputs.
 
-[Project overview](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/) · [Paper (PDF)](docs/occupancy-forecasting-working-paper.pdf) · [Code and results](#code-and-results) · [Reproduce the analysis](#reproduce-the-analysis)
+[Project overview](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/) · [Worked example](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/guide/) · [Paper (PDF)](docs/occupancy-forecasting-working-paper.pdf) · [Code and results](#code-and-results) · [Reproduce the analysis](#reproduce-the-analysis)
 
 ## My role
 

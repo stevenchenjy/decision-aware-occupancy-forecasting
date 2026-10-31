@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>From occupancy scores to empty windows: a worked example | Junyu Chen</title>
+  <meta name="description" content="Reproduce a saved-output building-occupancy comparison, understand the threshold and duration rule, and test its limits in a browser or Python notebook.">
+  <link rel="canonical" href="https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/guide/">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../demo/style.css">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="From occupancy scores to empty windows: a worked example">
+  <meta property="og:description" content="Try the recommendation rule, compare three fixed policies, and reproduce the recorded results.">
+  <meta property="og:url" content="https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/guide/">
+  <meta property="og:image" content="https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/assets/social-preview.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <style>
+    main { max-width:900px; }
+    .article-copy { max-width:740px; }
+    figure { margin:2rem 0; }
+    figure img { width:100%; height:auto; }
+    figcaption { font-size:.8rem; color:var(--muted); }
+    code { font-size:.87em; overflow-wrap:anywhere; }
+    ol { padding-left:1.3rem; }
+    li { margin-bottom:.7rem; }
+    .callout { border-left:3px solid var(--teal); padding-left:1.2rem; }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#example">Skip to the worked example</a>
+  <main>
+    <nav class="top" aria-label="Research navigation"><a href="../">Research overview</a><a href="../demo/">Try the demo</a><a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting">Code and results</a></nav>
+    <header>
+      <p class="eyebrow">WORKED EXAMPLE · BUILDING OCCUPANCY</p>
+      <h1>From occupancy scores<br>to empty windows</h1>
+      <p class="intro">A forecast gives a score for each future interval. A recommendation rule decides which continuous periods are worth examining. This example makes that second step visible.</p>
+      <p class="byline">Junyu Chen · Research with guidance from Prof. Chong Li</p>
+    </header>
+    <article id="example">
+      <section class="article-copy" aria-labelledby="question-heading">
+        <h2 id="question-heading">The question behind the rule</h2>
+        <p>A single interval with a high empty score may be too short to matter for building planning. Our offline study asks how forecasts translate into sustained empty periods, how often those recommendations conflict with recorded occupancy, and what processed building load overlaps them.</p>
+        <p>The records come from the cleaned LBNL Building 59 release. This example uses saved predictions and 43 non-overlapping test horizons, each containing 96 fifteen-minute intervals. The 4,128 intervals are distinct from the larger, overlapping forecast comparison in the manuscript.</p>
+      </section>
+      <section class="article-copy" aria-labelledby="rule-heading">
+        <h2 id="rule-heading">Keep a continuous run above the threshold</h2>
+        <p>The selected hybrid combines historical-schedule, LightGBM, and compact Transformer scores with weights of 0.15, 0.60, and 0.25. Its reported rule keeps runs at or above 0.875 lasting at least one hour, or four consecutive intervals. A run cannot cross the boundary between two daily horizons.</p>
+        <p>The study selected the weights and thresholds using validation data. The score is uncalibrated, so 0.875 should not be read as an 87.5% probability of physical absence. The completed midnight-labelled input bin becomes available at 00:15; the saved policy horizon starts at that boundary.</p>
+      </section>
+      <figure>
+        <img src="../assets/reported-policies.svg" width="1000" height="430" alt="Reported hybrid: 490.1 kWh processed-load overlap and zero camera-label conflicts. Historical schedule: 94.6 kWh and zero conflicts. LightGBM: 493.9 kWh and 11 conflicts. All use the same 43 saved horizons.">
+        <figcaption>Fixed validation-selected policies evaluated on recorded test outputs. Load overlap is an offline accounting measure.</figcaption>
+      </figure>
+      <section aria-labelledby="results-heading">
+        <h2 id="results-heading">Recompute the reported comparison</h2>
+        <div class="table-scroll"><table>
+          <caption>One-hour minimum windows on 43 non-overlapping saved test horizons</caption>
+          <thead><tr><th scope="col">Policy</th><th scope="col">Threshold</th><th scope="col">Windows</th><th scope="col">Intervals</th><th scope="col">Conflicts</th><th scope="col">Load overlap (kWh)</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Selected hybrid</th><td>0.875</td><td>14</td><td>259</td><td>0</td><td>490.1</td></tr>
+            <tr><th scope="row">Historical schedule</th><td>0.950</td><td>12</td><td>66</td><td>0</td><td>94.6</td></tr>
+            <tr><th scope="row">LightGBM</th><td>0.950</td><td>19</td><td>265</td><td>11</td><td>493.9</td></tr>
+          </tbody>
+        </table></div>
+        <p class="article-copy">A conflict is a recommended interval whose reference camera label says occupied. The load calculation sums processed HVAC-plus-lighting load only where the rule recommends and the camera label says empty. It does not measure an intervention or the amount of load a controller could remove.</p>
+      </section>
+      <section class="article-copy" aria-labelledby="try-heading">
+        <h2 id="try-heading">Try it, then check the calculation</h2>
+        <ol>
+          <li><a href="../demo/">Open the browser demo</a>. It starts with the reported hybrid rule and shows the aggregate results above.</li>
+          <li>Choose LightGBM to see its own reported threshold. Change the threshold or minimum duration to explore the saved records. The status label identifies those changes as exploratory.</li>
+          <li>Choose an example date and expand its table. The date changes the plotted example; the aggregate results still cover all 43 horizons. Use <em>Copy link</em> to share the same settings and date.</li>
+          <li><a href="https://colab.research.google.com/github/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/notebooks/try_the_study.ipynb">Open the Python notebook</a> and run its cells. The core calculation uses Python's standard library and compact source records. It recomputes the three fixed rows without retraining models. Plotting is optional.</li>
+        </ol>
+        <p>If you try the notebook, <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/issues/new?template=reproduction.yml">report the environment, commit or source hashes, commands, and observed outputs</a>. Failed attempts help identify problems in the instructions. Independent reproduction of saved outputs is a useful check of the accounting.</p>
+      </section>
+      <section class="article-copy callout" aria-labelledby="limits-heading">
+        <h2 id="limits-heading">What the example establishes</h2>
+        <p>The hybrid found 14 windows with zero recorded conflicts in this saved test period. That observation cannot guarantee future conflict-free recommendations, verify physical absence, or establish energy savings. Changing settings on these already inspected records cannot establish a new confirmed improvement.</p>
+        <p>Source timestamp and imputation provenance, corrected model initialization, and evaluation on untouched data remain necessary for a prospective study. Equipment and comfort constraints need further testing before any building-control claim.</p>
+      </section>
+      <section class="article-copy" aria-labelledby="sources-heading">
+        <h2 id="sources-heading">Check the evidence</h2>
+        <p><a href="../occupancy-forecasting-working-paper.pdf">Author manuscript</a> · <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/results/canonical_policy_10pct.csv">Canonical policy table</a> · <a href="../demo/data.json">Compact records with source hashes</a> · <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/CLAIMS_AND_LIMITATIONS.md">Full claim boundaries</a></p>
+      </section>
+    </article>
+    <footer><p>Junyu Chen · <a href="https://stevenchenjy.github.io/">Research and projects</a> · <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting">View the repository</a></p><p>This page has no visitor analytics or third-party scripts. Hosting providers may record access.</p></footer>
+  </main>
+</body>
+</html>

@@ -31,6 +31,6 @@ jobs:
       - name: Check policy scope and accounting countercases
         run: python -m unittest discover -s tests -p 'test_demo_analysis.py' -v
       - name: Reconcile browser accounting with Python
-        run: node --test tests/demo-policy.test.cjs
+        run: node --test tests/demo-*.test.cjs
       - name: Execute notebook code cells without training dependencies
         run: python scripts/check_demo_notebook.py
