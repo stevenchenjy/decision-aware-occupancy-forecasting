@@ -15,12 +15,13 @@
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
   <script src="policy.js" defer></script>
+  <script src="state.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
   <a class="skip" href="#controls">Skip to the controls</a>
   <main>
-    <nav class="top" aria-label="Research navigation"><a href="../">← Research overview</a><a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting">View on GitHub ↗</a></nav>
+    <nav class="top" aria-label="Research navigation"><a href="../">← Research overview</a><a href="../guide/">Read the worked example</a><a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting">View on GitHub ↗</a></nav>
     <header>
       <p class="eyebrow">OCCUPANCY FORECASTING · SAVED-OUTPUT DEMO</p>
       <h1>When should a forecast<br class="desktop-break"> become a recommendation?</h1>
@@ -44,10 +45,11 @@
         <div class="metric"><span class="metric-label">Associated load proxy</span><strong><span id="opportunity">…</span> <small>kWh</small></strong><span class="hint">Processed load in recommended, camera-empty intervals</span></div>
       </div>
       <p class="scope-note">The load proxy is an overlap measure, not measured energy savings or verified controllable capacity. Zero recorded conflicts does not guarantee future performance or physical absence.</p>
+      <div class="share"><label for="share-link">Share this replay</label><div class="share-controls"><input id="share-link" type="url" readonly aria-describedby="share-status"><button id="copy-link" type="button" disabled>Copy link</button></div><p id="share-status" class="hint" role="status">Loading the replay address…</p></div>
     </section>
     <section aria-labelledby="day-heading">
       <div class="section-top day-heading"><div><p class="eyebrow">LOOK AT ONE HORIZON</p><h2 id="day-heading">Scores, labels, and recommendations</h2></div><div class="day-picker"><label for="day">Example anchor date</label><select id="day" disabled aria-describedby="example-note"><option>Loading…</option></select></div></div>
-      <p id="example-note" class="help">The initial example has the largest load-proxy overlap under the reported hybrid policy. The metrics above always cover all 43 horizons.</p>
+      <p id="example-note" class="help">The default example has the largest load-proxy overlap under the reported hybrid policy. A shared link may select another date. The metrics above always cover all 43 horizons.</p>
       <div class="legend" aria-label="Plot legend"><span><i class="line"></i>Empty score</span><span><i class="dash"></i>Threshold</span><span><i class="empty"></i>Camera-empty label</span><span><i class="recommend"></i>Recommended</span><span><i class="conflict"></i>Conflict</span></div>
       <div id="timeline" class="timeline"><p>Loading the example…</p></div>
       <p class="hint">Each interval is 15 minutes. Local Pacific labels run from 00:15 to the next 00:15. The completed 00:00 input bin is available at 00:15.</p>

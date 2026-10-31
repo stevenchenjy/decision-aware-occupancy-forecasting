@@ -24,6 +24,11 @@
       ? 'Reported policy: ' + model.label + ', validation-selected threshold ' + s.threshold.toFixed(3) + ', minimum window 1 hour. Evaluated on saved test outputs.'
       : 'Exploratory replay of an already inspected test period. These settings are not a newly validated policy or confirmed improvement.';
     renderDay(s);
+    const address = new URL(location.href);
+    address.search = window.OccupancyState.query(s, data.days[Number($('day').value)]);
+    history.replaceState(null, '', address);
+    $('share-link').value = address.href;
+    $('share-status').textContent = 'The link preserves the model, threshold, duration, and example date.';
   }
   function renderDay(s) {
     const day = data.days[Number($('day').value)];
@@ -68,9 +73,13 @@
       data = await response.json();
       if (data.schemaVersion !== 1 || data.days.length !== 43 || data.models.length !== 3) throw new Error('Unexpected data format');
       $('day').replaceChildren(...data.days.map((day, i) => { const option = document.createElement('option'); option.value = i; option.textContent = day.anchor.slice(0, 10); return option; }));
-      $('day').value = String(data.defaultExampleIndex);
+      const initial = window.OccupancyState.read(location.search, data);
+      $('model').value = initial.model;
+      $('threshold').value = String(initial.threshold);
+      $('duration').value = String(initial.minSteps);
+      $('day').value = String(initial.dayIndex);
       $('provenance').replaceChildren(...data.sources.map(source => { const item = document.createElement('li'); item.textContent = source.path + ' · SHA-256: ' + source.sha256; return item; }));
-      ['controls', 'reset', 'day', 'download'].forEach(id => { $(id).disabled = false; });
+      ['controls', 'reset', 'day', 'download', 'copy-link'].forEach(id => { $(id).disabled = false; });
       render();
     } catch (error) {
       $('load-error').hidden = false;
@@ -84,6 +93,16 @@
   $('day').addEventListener('change', render);
   $('reset').addEventListener('click', () => { $('threshold').value = data.models.find(m => m.id === $('model').value).reportedThreshold; $('duration').value = '4'; render(); });
   $('download').addEventListener('click', download);
+  $('copy-link').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText($('share-link').value);
+      $('share-status').textContent = 'Link copied. Anyone opening it can inspect the same replay settings.';
+    } catch (error) {
+      $('share-link').focus();
+      $('share-link').select();
+      $('share-status').textContent = 'Select and copy the replay address above.';
+    }
+  });
   $('retry').addEventListener('click', load);
   load();
 })();

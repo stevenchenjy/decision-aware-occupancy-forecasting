@@ -39,6 +39,11 @@ button:disabled { opacity:.55; cursor:wait; }
 .metric strong { display:block; font-size:2.7rem; font-weight:500; font-variant-numeric:tabular-nums; letter-spacing:-.04em; margin:.3rem 0; line-height:1.2; }
 .metric strong small { font-size:1rem; letter-spacing:0; }
 .scope-note { font-size:.8rem; color:var(--muted); margin:.4rem 0 0; max-width:840px; }
+.share { margin-top:1.4rem; padding-top:1rem; border-top:1px solid var(--line); }
+.share-controls { display:flex; gap:.6rem; }
+.share-controls input { min-width:0; flex:1; padding:.55rem; color:var(--ink); background:white; border:1px solid #a6bab5; border-radius:4px; font:.8rem/1.5 monospace; }
+.share-controls button { flex-shrink:0; }
+.share .hint { margin:.6rem 0 0; }
 .day-heading { align-items:center; }
 .day-picker { min-width:155px; }
 .day-heading .eyebrow { margin-bottom:.45rem; }

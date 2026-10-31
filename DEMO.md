@@ -24,7 +24,7 @@ From a local checkout, `python3 scripts/check_demo_notebook.py` executes all cod
 python3 scripts/build_demo.py
 python3 scripts/build_demo.py --check
 python3 -m unittest discover -s tests -p 'test_demo_analysis.py' -v
-node --test tests/demo-policy.test.cjs
+node --test tests/demo-*.test.cjs
 python3 scripts/check_demo_notebook.py
 python3 -m http.server 8765 --directory docs
 ```
@@ -40,3 +40,6 @@ The input is a cleaned, imputed release. A 00:00 anchor covers the completed 00:
 The paired AUPRC uncertainty comparisons in the manuscript cross zero. No claim of statistically decisive model superiority follows from the demo. Exploring the already inspected test period cannot establish a new confirmed policy. See [CLAIMS_AND_LIMITATIONS.md](CLAIMS_AND_LIMITATIONS.md) and [the empirical rerun plan](paper/audits/rerun_manifest.md).
 
 To help, [file a reproduction report](https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/issues/new?template=reproduction.yml) describing what you actually ran and obtained.
+## Share an example
+
+The [worked example](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/guide/) explains the rule and the reported comparison. In the demo, **Copy link** preserves the model, threshold, minimum duration, and example date in the URL. Opening that link restores the same replay. Unsupported settings fall back to the reported policy for the selected model. Links with changed settings remain explicitly exploratory.

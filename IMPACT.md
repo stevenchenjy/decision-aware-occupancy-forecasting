@@ -26,6 +26,8 @@ python3 scripts/capture_impact.py --output local-impact
 
 `local-impact/` is gitignored. You may instead specify a private directory outside the repository. The script reads stars, forks, subscribers, open issues, and the available traffic endpoints. It records access failures explicitly. It does not publish the snapshot, obtain new permissions, or add analytics to the demo.
 
+The snapshot identifies the owner's own star separately and lists stars and issues from other non-bot accounts. These accounts may still be collaborators, so this is not proof of independence. Reproduction-titled issues are candidates to read manually, including failed attempts. They are never automatically counted as successful reproductions. Unavailable API data remain unknown.
+
 ## Suggested first-week activities
 
 Invite three independent reproduction attempts, share one factual explanation with a relevant community that permits project posts, and follow up on specific technical feedback. These are activities to attempt, not promised outcomes or existing impact. Count completed reports and contributions separately from invitations sent.
