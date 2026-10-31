@@ -72,7 +72,8 @@
           <li>Choose an example date and expand its table. The date changes the plotted example; the aggregate results still cover all 43 horizons. Use <em>Copy link</em> to share the same settings and date.</li>
           <li><a href="https://colab.research.google.com/github/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/notebooks/try_the_study.ipynb">Open the Python notebook</a> and run its cells. The core calculation uses Python's standard library and compact source records. It recomputes the three fixed rows without retraining models. Plotting is optional.</li>
         </ol>
-        <p>If you try the notebook, <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/issues/new?template=reproduction.yml">report the environment, commit or source hashes, commands, and observed outputs</a>. Failed attempts help identify problems in the instructions. Independent reproduction of saved outputs is a useful check of the accounting.</p>
+        <p>To work offline with standard Python, <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/releases/tag/replay-kit-v1">download and extract the replay kit</a>, then run <code>python replay.py --receipt reproduction-receipt.json --csv comparison.csv</code>. It includes the compact records and checks their file hashes. Python 3.10 or later is required; no training dependencies or Jupyter installation are needed.</p>
+        <p>If you try either path, <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/issues/new?template=reproduction.yml">report the environment, commit or source hashes, commands, and observed outputs</a>. You may review and attach the local receipt. Failed attempts help identify problems in the instructions. A receipt is a self-report and uploads nothing automatically.</p>
       </section>
       <section class="article-copy callout" aria-labelledby="limits-heading">
         <h2 id="limits-heading">What the example establishes</h2>
@@ -81,7 +82,7 @@
       </section>
       <section class="article-copy" aria-labelledby="sources-heading">
         <h2 id="sources-heading">Check the evidence</h2>
-        <p><a href="../occupancy-forecasting-working-paper.pdf">Author manuscript</a> · <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/results/canonical_policy_10pct.csv">Canonical policy table</a> · <a href="../demo/data.json">Compact records with source hashes</a> · <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/CLAIMS_AND_LIMITATIONS.md">Full claim boundaries</a></p>
+        <p><a href="../paper.html">Paper and citation</a> · <a href="../occupancy-forecasting-working-paper.pdf">Author manuscript</a> · <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/results/canonical_policy_10pct.csv">Canonical policy table</a> · <a href="../demo/data.json">Compact records with source hashes</a> · <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/CLAIMS_AND_LIMITATIONS.md">Full claim boundaries</a></p>
       </section>
     </article>
     <footer><p>Junyu Chen · <a href="https://stevenchenjy.github.io/">Research and projects</a> · <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting">View the repository</a></p><p>This page has no visitor analytics or third-party scripts. Hosting providers may record access.</p></footer>

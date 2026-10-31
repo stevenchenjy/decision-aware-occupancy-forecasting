@@ -6,7 +6,7 @@ Junyu Chen · Chong Li | October, 2026
 
 **Manuscript submitted to ACM BuildSys; decision pending.** Submission status reported by Junyu Chen on October 30, 2026.
 
-[**Try the browser demo**](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/demo/) · [**Run the notebook in Colab**](https://colab.research.google.com/github/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/notebooks/try_the_study.ipynb) · [Report a reproduction](https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/issues/new?template=reproduction.yml)
+[**Try the browser demo**](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/demo/) · [**Download the offline Python kit**](https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/releases/tag/replay-kit-v1) · [**Run the notebook in Colab**](https://colab.research.google.com/github/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/notebooks/try_the_study.ipynb) · [Report a reproduction](https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/issues/new?template=reproduction.yml)
 
 ![Fixed validation-selected policies on 43 recorded test horizons: hybrid 490.1 kWh load overlap and zero recorded conflicts; historical schedule 94.6 kWh and zero; LightGBM 493.9 kWh and 11. Load overlap is not measured energy savings.](docs/assets/reported-policies.svg)
 
@@ -16,7 +16,7 @@ How can building-occupancy forecasts identify sustained empty periods worth inve
 
 This study uses recorded data from LBNL Building 59 to connect that practical question with model development and evaluation. It compares historical schedules, machine-learning models, and a model blend, then checks whether their recommendations agree with recorded occupancy labels. The repository contains the paper, Python code, saved predictions, evaluation tables, and figures. The reported findings come from an offline analysis of saved model outputs.
 
-[Project overview](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/) · [Worked example](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/guide/) · [Paper (PDF)](docs/occupancy-forecasting-working-paper.pdf) · [Code and results](#code-and-results) · [Reproduce the analysis](#reproduce-the-analysis)
+[Project overview](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/) · [Worked example](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/guide/) · [Paper and citation](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/paper.html) · [Paper (PDF)](docs/occupancy-forecasting-working-paper.pdf) · [Code and results](#code-and-results) · [Reproduce the analysis](#reproduce-the-analysis)
 
 ## My role
 
@@ -61,6 +61,8 @@ Read the [full results summary](RESULTS_SUMMARY.md), inspect the [forecast compa
 The [project overview](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/) explains the study for a general reader. The [paper workspace](paper/README.md) provides the manuscript and methodology context.
 
 ## Reproduce the analysis
+
+For a small download and standard Python, use the [offline replay kit](https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/releases/tag/replay-kit-v1). Extract it and run `python replay.py --receipt reproduction-receipt.json --csv comparison.csv`. It recomputes the three reported policy rows without training dependencies, a Git checkout, or network access. The optional receipt stays on your computer until you choose to share it. This is the compact replay; the commands below regenerate the broader repository analysis.
 
 The supported reproduction path reads the committed processed data and prediction files, then regenerates the downstream analysis. It does not retrain the forecasting models from original source streams.
 

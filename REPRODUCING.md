@@ -1,5 +1,12 @@
 # Reproducing the Audited Artifacts
 
+
+## Offline Python kit
+
+The [versioned replay kit](https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/releases/tag/replay-kit-v1) includes the compact records, canonical policy functions, notebook and source notices. Extract it and run `python replay.py --receipt reproduction-receipt.json --csv comparison.csv`. Python 3.10 or later is sufficient. No network, Jupyter or training dependencies are needed for the command. Each archive contains file hashes and the exact source commit; the release also supplies an archive checksum.
+
+The receipt stays local. It records observed results and a small environment description without a username or hostname. It is a self-report that can be edited. A receipt or a download counter alone cannot establish independent successful reproduction.
+
 ## Start with the small demonstration
 
 The [browser demo](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/demo/) needs no installation. The [notebook](notebooks/try_the_study.ipynb) recomputes the fixed policy comparison using Python's standard library. See [DEMO.md](DEMO.md) for the compact export, checks, and CSV download. These are saved-output replay paths, not empirical retraining.

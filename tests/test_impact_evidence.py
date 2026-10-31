@@ -1,5 +1,5 @@
 import unittest
-from scripts.capture_impact import participation
+from scripts.capture_impact import participation, release_activity, summary_text
 
 
 class ParticipationEvidenceTests(unittest.TestCase):
@@ -22,6 +22,22 @@ class ParticipationEvidenceTests(unittest.TestCase):
         self.assertFalse(result["issues_available"])
         self.assertNotIn("non_owner_non_bot_star_accounts", result)
         self.assertNotIn("reproduction_report_candidates", result)
+
+    def test_asset_downloads_are_requests_and_unknown_is_not_zero(self):
+        unavailable = {"available": False, "error": "Access unavailable"}
+        self.assertEqual(release_activity(unavailable), unavailable)
+        asset = {"id": 5, "name": "kit.zip", "size": 200, "download_count": 2,
+                 "created_at": "2026-10-30T00:00:00Z", "browser_download_url": "https://example.test/kit.zip"}
+        activity = release_activity({"available": True, "data": [{"draft": False, "tag_name": "v1", "assets": [asset]}]})
+        snapshot = {"captured_at_utc": "2026-10-30T00:00:00Z", "public_counts": {"stargazers_count": 1, "forks_count": 0},
+                    "participation": {}, "release_activity": activity, "traffic": {"views": unavailable, "clones": unavailable}}
+        text = summary_text(snapshot)
+        self.assertIn("Other non-bot star accounts: unavailable", text)
+        self.assertIn("2 requests", text)
+        self.assertIn("no comparable asset baseline", text)
+        self.assertNotIn("successful reproductions: 2", text)
+        previous = {"release_activity": {"assets": [{"id": 5, "download_count": 1}]}}
+        self.assertIn("change since previous snapshot: +1", summary_text(snapshot, previous))
 
 
 if __name__ == "__main__":

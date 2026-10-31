@@ -13,6 +13,7 @@ body:
         - Browser demonstration
         - Colab notebook
         - Local notebook or lightweight checks
+        - Offline Python replay kit
         - Full saved-output analysis
         - Separate independent extension
     validations:
@@ -44,6 +45,11 @@ body:
       description: Include the metrics you actually obtained, any error, and what differed from the documentation. Describe your result even if the attempt did not finish.
     validations:
       required: true
+  - type: textarea
+    id: receipt
+    attributes:
+      label: Optional replay receipt
+      description: Attach or paste the JSON receipt if you used the offline kit. Review it first. It records version, data hashes, OS family, Python version and observed results, without a username or hostname. A receipt is a self-report, not proof of independence or successful use.
   - type: textarea
     id: feedback
     attributes:

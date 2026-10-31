@@ -47,6 +47,48 @@ def participation(owner, stars, issues):
     return result
 
 
+def release_activity(response):
+    if not response["available"]:
+        return response
+    return {"available": True, "assets": [
+        {"id": asset["id"], "release_tag": release["tag_name"], "name": asset["name"],
+         "bytes": asset["size"], "download_count": asset["download_count"],
+         "created_at": asset["created_at"], "url": asset["browser_download_url"], "digest": asset.get("digest")}
+        for release in response["data"] if not release["draft"] for asset in release["assets"]],
+        "interpretation": "Lifetime platform download requests, including maintainer and automated requests. Not unique people or verified use."}
+
+
+def summary_text(snapshot, previous=None):
+    counts, activity = snapshot["public_counts"], snapshot["participation"]
+    stars = activity.get("non_owner_non_bot_star_accounts")
+    issues = activity.get("non_owner_non_bot_issues")
+    lines = ["OCCUPANCY PROJECT: DATED EVIDENCE SNAPSHOT", "Captured UTC: " + snapshot["captured_at_utc"],
+             f"Repository stars: {counts['stargazers_count']}",
+             "Other non-bot star accounts: " + (str(len(stars)) if stars is not None else "unavailable"),
+             f"Forks: {counts['forks_count']}",
+             "Outside non-bot issue reports: " + (str(len(issues)) if issues is not None else "unavailable"),
+             "Issue titles and receipts require manual reading before any successful reproduction claim.", "",
+             "RELEASE ASSETS: LIFETIME PLATFORM DOWNLOAD REQUESTS"]
+    releases = snapshot.get("release_activity", {})
+    previous_releases = (previous or {}).get("release_activity", {})
+    prior_assets = {item["id"]: item for item in previous_releases.get("assets", [])}
+    if not releases.get("available"):
+        lines.append("Release asset activity unavailable.")
+    for asset in releases.get("assets", []):
+        prior = prior_assets.get(asset["id"])
+        delta = f"; change since previous snapshot: {asset['download_count'] - prior['download_count']:+d}" if prior else "; no comparable asset baseline"
+        lines.append(f"{asset['release_tag']} / {asset['name']}: {asset['download_count']} requests; {asset['bytes']} bytes" + delta)
+    lines += ["Downloads can include our own checks and automation. They do not establish unique users or successful reproduction.", "",
+              "REPOSITORY TRAFFIC: ROLLING 14-DAY WINDOW"]
+    for name in ["views", "clones"]:
+        entry = snapshot["traffic"][name]
+        lines.append(f"{name}: {entry['data']['count']} events; {entry['data']['uniques']} platform uniques" if entry["available"] else f"{name}: unavailable")
+    lines += ["Rolling uniques are shown as reported and are not differenced into new users.",
+              "The browser demo itself has no visitor analytics. Repository traffic is not a count of demo users.",
+              "These records do not establish endorsement, independent validation, operational adoption or energy savings."]
+    return "\n".join(lines) + "\n"
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path, help="Private directory outside the repository, or local-impact/ (gitignored)")
@@ -63,14 +105,20 @@ def main():
         "repository": REPOSITORY,
         "public_counts": {key: raw[key] for key in ["stargazers_count", "forks_count", "subscribers_count", "open_issues_count"]},
         "participation": participation(raw["owner"]["login"], api("stargazers?per_page=100", paginated=True), api("issues?state=all&per_page=100", paginated=True)),
+        "release_activity": release_activity(api("releases?per_page=100", paginated=True)),
         "traffic_window_note": "GitHub rolling 14-day visitor/clone data; includes testing and does not establish successful reuse.",
         "traffic": {name: api(f"traffic/{name}") for name in ["views", "clones", "popular/referrers", "popular/paths"]},
     }
     output.mkdir(parents=True, exist_ok=True)
+    earlier = sorted(output.glob("github-impact-*.json"))
+    previous = json.loads(earlier[-1].read_text()) if earlier else None
     name = "github-impact-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + ".json"
     path = output / name
     path.write_text(json.dumps(snapshot, indent=2) + "\n")
+    summary_path = path.with_suffix(".txt")
+    summary_path.write_text(summary_text(snapshot, previous), encoding="utf-8")
     print("Saved private evidence snapshot:", path)
+    print("Saved readable evidence summary:", summary_path)
     print("Public counts:", snapshot["public_counts"])
     print("Account activity:", snapshot["participation"])
     for name, value in snapshot["traffic"].items():

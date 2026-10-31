@@ -4,10 +4,14 @@ on:
   push:
     paths:
       - 'src/demo_analysis.py'
+      - 'replay.py'
+      - 'replay/**'
+      - 'scripts/*replay*'
       - 'scripts/*demo*'
       - 'docs/**'
       - 'notebooks/**'
       - 'tests/*demo*'
+      - 'tests/test_replay_cli.py'
       - 'results/**'
       - '.github/workflows/demo.yml'
   pull_request:
@@ -34,3 +38,9 @@ jobs:
         run: node --test tests/demo-*.test.cjs
       - name: Execute notebook code cells without training dependencies
         run: python scripts/check_demo_notebook.py
+      - name: Check standalone command countercases
+        run: python -m unittest discover -s tests -p 'test_replay_cli.py' -v
+      - name: Build and run the offline release kit
+        run: |
+          python scripts/build_replay_kit.py --output /tmp/occupancy-release-check
+          python scripts/check_replay_kit.py /tmp/occupancy-release-check/occupancy-replay-kit-v1.zip
