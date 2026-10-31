@@ -4,6 +4,14 @@
 
 Junyu Chen · Chong Li | October, 2026
 
+**Manuscript submitted to ACM BuildSys; decision pending.** Submission status reported by Junyu Chen on October 30, 2026.
+
+[**Try the browser demo**](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/demo/) · [**Run the notebook in Colab**](https://colab.research.google.com/github/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/notebooks/try_the_study.ipynb) · [Report a reproduction](https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/issues/new?template=reproduction.yml)
+
+![Fixed validation-selected policies on 43 recorded test horizons: hybrid 490.1 kWh load overlap and zero recorded conflicts; historical schedule 94.6 kWh and zero; LightGBM 493.9 kWh and 11. Load overlap is not measured energy savings.](docs/assets/reported-policies.svg)
+
+For researchers and students comparing occupancy forecasts with the recommendations they produce. The demo replays saved outputs in your browser. No installation, training, or building-data upload is required.
+
 How can building-occupancy forecasts identify sustained empty periods worth investigating for changes to heating, cooling, and lighting schedules?
 
 This study uses recorded data from LBNL Building 59 to connect that practical question with model development and evaluation. It compares historical schedules, machine-learning models, and a model blend, then checks whether their recommendations agree with recorded occupancy labels. The repository contains the paper, Python code, saved predictions, evaluation tables, and figures. The reported findings come from an offline analysis of saved model outputs.
@@ -121,3 +129,14 @@ The PDF is an unpublished author manuscript; this repository does not claim peer
 [Paper (PDF)](docs/occupancy-forecasting-working-paper.pdf) · [Citation / BibTeX](docs/citation.bib) · [Archived research snapshot](https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/releases/tag/research-record-v1) · [Earlier anonymous manuscript](paper/manuscript/main.tex)
 
 The [`docs/`](docs/) directory contains the public project page, supplied author manuscript, and citation. [`paper/research-record/`](paper/research-record/) records snapshot provenance and checksums. [`paper/`](paper/) holds the earlier manuscript source, figures, audits, and submission materials. Historical reports and exploratory analyses remain in [`reports/`](reports/); use the final audit and canonical result tables when interpreting earlier claims.
+
+## Try it, contribute, and reuse the code
+
+- [Browser demonstration](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/demo/): change a threshold or duration, inspect a recorded horizon, and download the current replay as CSV. Parameter changes are exploratory.
+- [Notebook](notebooks/try_the_study.ipynb): recompute the three fixed policy rows from compact records using Python's standard library, with an optional plot.
+- [Demo guide](DEMO.md): data provenance, source hashes, expected outputs, local checks, and interpretation.
+- [Contribution guide](CONTRIBUTING.md): reproduction reports, starter tasks, and focused pull requests. Failed reproduction attempts are useful feedback too.
+
+If the work is useful, a star helps you find it again. A reproduction report, correction, or documented reuse tells us more about how the work is being used.
+
+Original software code and usage documentation are available under the [MIT license](LICENSE). The dataset, manuscripts, figures, and saved research exports retain their applicable source terms; see [LICENSING.md](LICENSING.md).

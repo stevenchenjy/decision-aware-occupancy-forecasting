@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Try the occupancy study | Junyu Chen and Chong Li</title>
+  <meta name="description" content="Explore how occupancy scores, duration, and recorded conflicts change empty-window recommendations. A browser replay of one building's saved outputs.">
+  <link rel="canonical" href="https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/demo/">
+  <meta property="og:title" content="When should an occupancy forecast become a recommendation?">
+  <meta property="og:description" content="Try the saved-output research demo. Compare sustained windows, recorded occupancy conflicts, and associated building load.">
+  <meta property="og:image" content="https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/assets/social-preview.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script src="policy.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#controls">Skip to the controls</a>
+  <main>
+    <nav class="top" aria-label="Research navigation"><a href="../">← Research overview</a><a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting">View on GitHub ↗</a></nav>
+    <header>
+      <p class="eyebrow">OCCUPANCY FORECASTING · SAVED-OUTPUT DEMO</p>
+      <h1>When should a forecast<br class="desktop-break"> become a recommendation?</h1>
+      <p class="intro">A high score for an empty building period is only a starting point. See how the score threshold and required duration affect which periods a model recommends.</p>
+      <p class="byline">Junyu Chen · Chong Li <span>One building. 43 recorded test horizons.</span></p>
+    </header>
+    <section aria-labelledby="policy-heading" class="experiment">
+      <div class="section-top"><h2 id="policy-heading">Try the recommendation rule</h2><button id="reset" type="button" disabled>Restore reported policy</button></div>
+      <p class="help">Start with the paper's validation-selected settings, then change a control to explore the same historical records. No model training or installation is needed.</p>
+      <fieldset id="controls" disabled>
+        <legend class="sr-only">Recommendation settings</legend>
+        <div class="control"><label for="model">Forecast model</label><select id="model"><option value="hybrid">Selected hybrid</option><option value="historical">Historical schedule</option><option value="lightgbm">LightGBM</option></select></div>
+        <div class="control threshold"><label for="threshold">Empty-score threshold <output id="threshold-value" for="threshold">0.875</output></label><input type="range" id="threshold" min="0.050" max="0.950" step="0.025" value="0.875" aria-describedby="threshold-help"><span id="threshold-help" class="hint">Higher thresholds require a higher score. Scores are uncalibrated.</span></div>
+        <div class="control"><label for="duration">Minimum empty window</label><select id="duration"><option value="4">1 hour</option><option value="8">2 hours</option><option value="16">4 hours</option></select></div>
+      </fieldset>
+      <p id="policy-status" class="policy-status" role="status">Loading the saved records…</p>
+      <div id="load-error" class="error" hidden><p>The demo data could not be loaded. Check your connection and try again, or use the notebook below.</p><button id="retry" type="button">Try loading again</button></div>
+      <div id="metrics" class="metrics" aria-label="Aggregate outcomes across all 43 test horizons" aria-live="polite" aria-atomic="true">
+        <div class="metric"><span class="metric-label">Recommended windows</span><strong id="windows">…</strong><span id="intervals" class="hint">Continuous periods of at least 1 hour</span></div>
+        <div class="metric"><span class="metric-label">Occupancy-label conflicts</span><strong id="conflicts">…</strong><span id="conflict-rate" class="hint">Recommendations later labeled occupied</span></div>
+        <div class="metric"><span class="metric-label">Associated load proxy</span><strong><span id="opportunity">…</span> <small>kWh</small></strong><span class="hint">Processed load in recommended, camera-empty intervals</span></div>
+      </div>
+      <p class="scope-note">The load proxy is an overlap measure, not measured energy savings or verified controllable capacity. Zero recorded conflicts does not guarantee future performance or physical absence.</p>
+    </section>
+    <section aria-labelledby="day-heading">
+      <div class="section-top day-heading"><div><p class="eyebrow">LOOK AT ONE HORIZON</p><h2 id="day-heading">Scores, labels, and recommendations</h2></div><div class="day-picker"><label for="day">Example anchor date</label><select id="day" disabled aria-describedby="example-note"><option>Loading…</option></select></div></div>
+      <p id="example-note" class="help">The initial example has the largest load-proxy overlap under the reported hybrid policy. The metrics above always cover all 43 horizons.</p>
+      <div class="legend" aria-label="Plot legend"><span><i class="line"></i>Empty score</span><span><i class="dash"></i>Threshold</span><span><i class="empty"></i>Camera-empty label</span><span><i class="recommend"></i>Recommended</span><span><i class="conflict"></i>Conflict</span></div>
+      <div id="timeline" class="timeline"><p>Loading the example…</p></div>
+      <p class="hint">Each interval is 15 minutes. Local Pacific labels run from 00:15 to the next 00:15. The completed 00:00 input bin is available at 00:15.</p>
+      <details><summary>Read the example as a table</summary><div class="table-scroll"><table><caption>Recorded labels and the current recommendation rule for the selected horizon</caption><thead><tr><th scope="col">Interval start</th><th scope="col">Empty score</th><th scope="col">Camera label</th><th scope="col">Recommendation</th><th scope="col">Load proxy (kWh)</th></tr></thead><tbody id="day-table"></tbody></table></div></details>
+    </section>
+    <section aria-labelledby="comparison-heading">
+      <h2 id="comparison-heading">Compare the reported policies</h2>
+      <p>Each model below uses its own threshold selected on validation data, with a one-hour minimum window. This table stays fixed when you explore the controls.</p>
+      <div class="table-scroll"><table id="comparison"><caption>Fixed policies evaluated on the same 43 saved test horizons</caption><thead><tr><th scope="col">Model</th><th scope="col">Threshold</th><th scope="col">Windows</th><th scope="col">Intervals</th><th scope="col">Conflicts</th><th scope="col">Load proxy (kWh)</th></tr></thead><tbody><tr><th scope="row">Selected hybrid</th><td>0.875</td><td>14</td><td>259</td><td>0</td><td>490.1</td></tr><tr><th scope="row">Historical schedule</th><td>0.950</td><td>12</td><td>66</td><td>0</td><td>94.6</td></tr><tr><th scope="row">LightGBM</th><td>0.950</td><td>19</td><td>265</td><td>11</td><td>493.9</td></tr></tbody></table></div>
+      <p class="hint">The manuscript's AUPRC comparison uses 388,032 overlapping forecast rows, a different scope from these 4,128 unique policy intervals. The hybrid's small AUPRC advantage does not establish statistical superiority.</p>
+    </section>
+    <section class="next" aria-labelledby="next-heading">
+      <h2 id="next-heading">Inspect it. Reproduce it. Tell us what you find.</h2>
+      <p>The notebook recomputes this comparison from the same compact records. A reproduction report helps other readers understand which environments work and where the instructions need improvement.</p>
+      <div class="actions"><a class="button" href="https://colab.research.google.com/github/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/notebooks/try_the_study.ipynb">Run the notebook ↗</a><button id="download" type="button" disabled>Download current replay (CSV)</button><a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/issues/new?template=reproduction.yml">Report a reproduction</a></div>
+      <p class="hint"><a href="../demo/data.json" download>Download the compact source records (JSON)</a> · <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/CONTRIBUTING.md">Contribution guide</a> · <a href="../occupancy-forecasting-working-paper.pdf">Read the manuscript</a></p>
+    </section>
+    <details><summary>Data provenance and interpretation</summary><p>The demo uses the cleaned LBNL Building 59 release and the repository's saved test predictions. Its hybrid uses the fixed weights 0.15 historical schedule, 0.60 LightGBM, and 0.25 compact Transformer. It does not select new weights or fit a controller. The reported thresholds met a 10% empirical validation conflict cutoff, which is not a guarantee about future risk.</p><p>Moving the controls explores an already inspected test period. It cannot establish a better held-out policy or new confirmed results. Source timestamp provenance, upstream imputation, corrected deep-model initialization, and evaluation on fresh data remain necessary for a prospective study.</p><p><a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/DATA.md">Dataset provenance</a> · <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/CLAIMS_AND_LIMITATIONS.md">Full limitations</a></p><ul id="provenance"></ul></details>
+    <noscript><p>The interactive controls require JavaScript. The reported comparison table above is available without it. You can also <a href="https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/notebooks/try_the_study.ipynb">download the notebook</a>.</p></noscript>
+    <footer><p>Junyu Chen · Chong Li · Offline research demonstration · <a href="../">Project overview</a></p><p>The demo itself has no analytics or third-party scripts. Hosting providers may record access.</p></footer>
+  </main>
+</body>
+</html>

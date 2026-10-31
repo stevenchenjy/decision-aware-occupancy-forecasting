@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="430" viewBox="0 0 1000 430" role="img" aria-labelledby="title desc">
+<title id="title">Fixed recommendation policies on 43 recorded test horizons</title>
+<desc id="desc">The hybrid has 490.1 kWh processed-load overlap and zero camera-label conflicts; the historical schedule 94.6 kWh and zero conflicts; LightGBM 493.9 kWh and 11 conflicts. These are saved-output observations, not measured savings.</desc>
+<rect width="1000" height="430" fill="#f1f6f3" rx="8"/>
+<g font-family="Arial,sans-serif" fill="#1c3035">
+<text x="35" y="49" font-size="23">Forecast quality is one part of the decision.</text>
+<text x="35" y="80" font-size="15" fill="#53676b">Fixed validation-selected policies · one-hour minimum windows · 43 saved test horizons</text>
+<text x="290" y="126" font-size="14">Processed-load overlap (kWh)</text><text x="816" y="117" font-size="13">Camera-label</text><text x="816" y="135" font-size="13">conflicts / intervals</text>
+<text x="35" y="183" font-size="17">Selected hybrid</text>
+<rect x="290" y="162" width="421.53" height="30" rx="3" fill="#13685e"/>
+<text x="721.53" y="183" font-size="16">490.1</text>
+<text x="816" y="183" font-size="17">0 / 259</text>
+<text x="35" y="248" font-size="17">Historical schedule</text>
+<rect x="290" y="227" width="81.38" height="30" rx="3" fill="#80968f"/>
+<text x="381.38" y="248" font-size="16">94.6</text>
+<text x="816" y="248" font-size="17">0 / 66</text>
+<text x="35" y="313" font-size="17">LightGBM</text>
+<rect x="290" y="292" width="424.77" height="30" rx="3" fill="#bf7947"/>
+<text x="724.77" y="313" font-size="16">493.9</text>
+<text x="816" y="313" font-size="17">11 / 265</text>
+<line x1="290" y1="356" x2="720" y2="356" stroke="#a6bab5"/>
+<text x="290" y="376" font-size="12">0</text><text x="720" y="376" font-size="12" text-anchor="end">500 kWh</text>
+<text x="35" y="407" font-size="13" fill="#53676b">Load overlap is not measured energy savings. Zero recorded conflicts does not guarantee future performance.</text>
+</g></svg>

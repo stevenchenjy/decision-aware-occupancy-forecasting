@@ -2,7 +2,11 @@
 
 The [public research record](../research-record/README.md) now preserves a separate authored manuscript supplied from Drive. The PDF in this directory remains the earlier anonymous audit build. Public preservation of a working draft does not satisfy the empirical requirements below or constitute a venue submission.
 
-## Current status
+## Author-reported venue status
+
+Junyu Chen reports that the manuscript has been submitted to ACM BuildSys and a decision is pending (October 30, 2026). No acceptance is claimed. The year, track, and submission receipt have not been established in this repository. The scientific limits and prospective-rerun requirements below remain unchanged.
+
+## Scientific release status
 
 **Hold external submission as a prospective operational paper. Verdict: requires empirical rerun.**
 

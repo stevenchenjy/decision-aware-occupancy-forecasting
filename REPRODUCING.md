@@ -1,5 +1,9 @@
 # Reproducing the Audited Artifacts
 
+## Start with the small demonstration
+
+The [browser demo](https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/demo/) needs no installation. The [notebook](notebooks/try_the_study.ipynb) recomputes the fixed policy comparison using Python's standard library. See [DEMO.md](DEMO.md) for the compact export, checks, and CSV download. These are saved-output replay paths, not empirical retraining.
+
 ## Two distinct paths
 
 1. **Saved-output regeneration (verified here):** reads committed processed/prediction CSVs and reproduces downstream analysis.

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Try the saved-output demo
+    url: https://stevenchenjy.github.io/decision-aware-occupancy-forecasting/demo/
+    about: Explore the reported policy and inspect changes without installing anything.

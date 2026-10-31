@@ -1,0 +1,50 @@
+name: Reproduction report
+description: Tell us what you actually ran, which outputs matched, and where you got stuck.
+title: "Reproduction: "
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for trying the study. Failed attempts and unclear instructions are useful. This report concerns saved-output analysis unless you explicitly describe a separate empirical experiment."
+  - type: dropdown
+    id: path
+    attributes:
+      label: What did you try?
+      options:
+        - Browser demonstration
+        - Colab notebook
+        - Local notebook or lightweight checks
+        - Full saved-output analysis
+        - Separate independent extension
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit or version
+      description: Paste the commit SHA, release tag, or notebook data source hashes if available.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, browser, Python version, dependency versions, and Colab or local execution. Do not include private system details.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps or commands
+    validations:
+      required: true
+  - type: textarea
+    id: outputs
+    attributes:
+      label: Observed outputs and differences
+      description: Include the metrics you actually obtained, any error, and what differed from the documentation. Describe your result even if the attempt did not finish.
+    validations:
+      required: true
+  - type: textarea
+    id: feedback
+    attributes:
+      label: What would make this easier to reproduce?
