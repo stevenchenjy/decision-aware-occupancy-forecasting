@@ -8,6 +8,8 @@
 
 The repository uses selected south-zone occupancy, Wi-Fi, weather, temperature, electrical, and CO2 streams from the **cleaned** release. It does not commit the external package.
 
+The source dataset citation is: Hong, Tianzhen; Luo, Na; Blum, David; Wang, Zhe (2022). *A three-year building operational performance dataset for informing energy efficiency*. Dryad. [DOI 10.7941/D1N33Q](https://datadryad.org/dataset/doi:10.7941/D1N33Q). Its [DataCite metadata](https://api.datacite.org/dois/10.7941/D1N33Q) identifies the source data rights as Creative Commons Zero v1.0 Universal (CC0-1.0), checked October 30, 2026. The compact replay records are a derived subset of this study's processed data and saved predictions, rather than a new data collection by the study authors.
+
 ## Provenance boundary
 
 The cleaned release is not equivalent to original acquisition data. The source cleaning workflow may contain interpolation and other imputation. The repository cannot reconstruct original observation-end times, source-timezone semantics, per-value imputation lineage, or whether an imported value was prospective at a claimed decision instant.

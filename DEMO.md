@@ -12,6 +12,12 @@ The main counts always cover all 43 non-overlapping saved test horizons. Changin
 
 The CSV download includes every target interval, current settings, analysis status, scores, labels, recommendations, conflicts, and processed-load overlap. The [JSON export](docs/demo/data.json) includes all input records, source SHA-256 hashes, and a 333-setting reference grid computed by Python. The browser calculates results directly from the records; it does not merely look up those grid totals.
 
+## Offline Python kit
+
+The [versioned replay kit](https://github.com/stevenchenjy/decision-aware-occupancy-forecasting/releases/tag/replay-kit-v1) includes the compact records, canonical policy functions, notebook and source notices. Extract it and run `python replay.py --receipt reproduction-receipt.json --csv comparison.csv`. Python 3.10 or later is sufficient. No network, Jupyter or training dependencies are needed for the command. Each archive contains file hashes and the exact source commit; the release also supplies an archive checksum.
+
+The receipt stays local. It records observed results and a small environment description without a username or hostname. It is a self-report that can be edited. A receipt or a download counter alone cannot establish independent successful reproduction.
+
 ## Notebook
 
 [Open in Colab](https://colab.research.google.com/github/stevenchenjy/decision-aware-occupancy-forecasting/blob/main/notebooks/try_the_study.ipynb) or open `notebooks/try_the_study.ipynb` in Jupyter. It recomputes the reported comparison without training a model. You can choose a threshold and duration in a separate, explicitly exploratory cell.
